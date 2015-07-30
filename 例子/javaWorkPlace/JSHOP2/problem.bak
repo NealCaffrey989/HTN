@@ -1,0 +1,30 @@
+(defproblem problem sluice_scheduling
+  (
+   (remain-time 3)
+   (water-level 150)
+   (Max 160)
+   (Min 135)
+   (fIn 40000)
+   
+   (close-ability sluice-1 25000)
+   (close-ability sluice-2 35000)
+   (close-ability sluice-3 56700)
+   
+   (cfout 25000)
+   (cfout 35000)
+   (cfout 56700)
+   
+   (open-ability sluice-1 35000)
+   (open-ability sluice-2 56700)
+   (open-ability sluice-3 86000)
+   
+   (ofout 35000)
+   (ofout 56700)
+   (ofout 86000)
+   
+   (open-max-ability sluice-3 86000)
+   
+  )
+;;Ä¿±ê
+  ((remain-time 0))
+)

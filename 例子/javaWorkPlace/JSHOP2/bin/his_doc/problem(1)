@@ -1,0 +1,36 @@
+(defproblem problem Three_Gorges
+  (
+   (remain-time 3)
+   (duration 1)
+   (water-level 150)
+   (Max 160)
+   (Min 135)
+   (fIn 30000)
+   (patrol-water-level 32000)
+   (electric-equipment-wl 60000)
+   (equipment-checked false)
+   
+   (close-ability sluice-1 25000)
+   (close-ability sluice-2 35000)
+   (close-ability sluice-3 56700)
+   (close-min-ability sluice-1 25000)
+   (cfout 25000)
+   (cfout 35000)
+   (cfout 56700)
+   
+   (open-ability sluice-1 35000)
+   (open-ability sluice-2 56700)
+   (open-ability sluice-3 86000)
+   
+   (ofout 35000)
+   (ofout 56700)
+   (ofout 86000)
+   
+   (open-max-ability sluice-3 86000)
+  )
+;;Ä¿±ê
+  (;;(remain-time 0)
+  ;;(patrol-schedling-method 5 40000 32000)
+  (!open-sluice-3 sluice-1 35000 40000 3 150))
+  ;;(!do-nothing))
+)

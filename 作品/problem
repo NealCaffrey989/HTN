@@ -1,0 +1,74 @@
+(defproblem problem Transport
+ ((TimeScope 0 0) ;;时间轴
+  (EndTime car-1 0) 
+  (EndTime car-2 0)
+  (EndTime car-3 0)
+  (EndTime car-4 0)
+  (EndTime car-5 0)
+  
+  (Loc-in a a1);;
+  (Loc-in a a2)
+  
+  (in-loc a1 a 1)
+  (in-loc a2 a 2)
+  
+  (Loc-At car-1 a1);;car-1为车队编号)
+  (Loc-At car-2 a1)
+  (Loc-At car-3 a1)
+  (Loc-At car-4 a2)
+  (Loc-At car-5 a2)
+  
+  (Loc-from car-1 a1);;loc-from车队出的地点
+  (Loc-from car-2 a1)
+  (Loc-from car-3 a1)
+  (Loc-from car-4 a2)
+  (Loc-from car-5 a2)
+  
+  (Loc-Stock a1 6000);;loc-stock为该地的人数
+  (Loc-Stock a2 4000)
+  (sum-stock 12000);;sum-stock为A地要疏散的人数总和
+  
+  (car-Ability car-1 500 0);;carAbility为该车队一次运输的最大人数
+  (car-Ability car-2 500 0)
+  (car-Ability car-3 500 0)
+  (car-Ability car-4 400 0)
+  (car-Ability car-5 400 0)
+  
+  (Speed car-1 50) ;;车队的速度 km/h
+  (Speed car-2 50)
+  (Speed car-3 50)
+  (Speed car-4 60)
+  (Speed car-5 60)
+  
+  (Distance a1 b1 50);;两地之间的距离
+  (Distance a1 b2 45)
+  (Distance a1 b3 60)
+  (Distance a2 b1 60)
+  (Distance a2 b2 45)
+  (Distance a2 b3 50)
+  (Distance a1 a2 40)
+  (Distance b1 b2 20)
+  (Distance b2 b3 15)
+  (Distance b1 a1 50)
+  (Distance b2 a1 45)
+  (Distance b3 a1 60)
+  (Distance b1 a2 60)
+  (Distance b2 a2 45)
+  (Distance b3 a2 50)
+  (Distance a2 a1 40)
+  (Distance b2 b1 20)
+  (Distance b3 b2 15)
+  
+  (Loc-Have b1 0) ;;Loc-Have为该地已接收的人数
+  (Loc-Have b2 0)
+  (Loc-Have b3 0)
+  
+  (Loc-Ability b1 4000);;Loc-Ability该地最大能接收的人数
+  (Loc-Ability b2 3000)
+  (Loc-Ability b3 5000)
+ 
+ )
+ (:unordered
+  (Transport a 0)
+ )
+)

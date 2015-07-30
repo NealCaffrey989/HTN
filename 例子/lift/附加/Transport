@@ -1,0 +1,89 @@
+(defdomain Transport
+(
+;;----------------------operator-------------------------
+   (:operator (!load ?loc ?team ?amount)
+     () 
+
+      ((TeamAbility ?team ?ab ?c)(Stone-At ?n ?loc)(:protection(Team-At ?team ?loc)))
+
+      ((Stone-At (call - ?n ?amount) ?loc)
+      (TeamAbility ?team (call - ?ab ?amount) (call + ?c ?amount)))  
+   )
+   
+   (:operator (!move ?team ?loc-from ?loc-to)
+      ()
+      
+      ((Team-At ?team ?loc-from)) 
+
+      ((Team-At ?team ?loc-to)(:protection(Team-At ?team ?loc-to)))  
+   )
+
+   (:operator (!unload ?loc ?team ?amount)
+      ()
+     
+      ((TeamAbility ?team ?ab ?c)(Stone-At ?n ?loc)(:protection(Team-At ?team ?loc))) 
+
+      ((Stone-At (call + ?n ?amount) ?loc)
+       (TeamAbility ?team (call + ?ab ?amount) (call - ?c ?amount)))  
+
+   )
+
+;;-----------------------通用操作---------------------------
+(:operator(!!return-back)
+()
+()
+()
+)
+
+
+;;-------------------公理-----------------------------------
+(:-(same ?x ?y)nil)
+(:-(different ?x ?y)((not(same ?x ?y))))
+
+;;-----------------------method-----------------------------
+(:method(Stone-At ?amount ?loc-goal)
+  ((Team-At ?team ?loc-cur)
+   (different ?loc-cur ?loc-goal))
+
+   ((Transport-Dif ?amount ?loc-goal))
+
+   ((Team-At ?team ?loc-cur)
+    (same ?loc-cur ?loc-goal))
+
+   ((Transport-Same ?amount ?loc-goal))   
+
+    ()
+
+    ((!!return-back))
+)
+
+(:method(Transport-Dif ?amount ?loc-goal)
+  ((Stone-At ?n1 ?loc-cur)(call >= ?n1 ?amount))
+   
+  ((!load ?loc-cur ?team ?amount)
+    (!move ?team ?loc-cur ?loc-goal)
+    (!unload ?loc-goal ?team ?amount))
+
+  ((Stone-At ?n1 ?loc-cur)(call = ?n1 0))
+
+  ((!move ?team ?loc-cur ?loc-goal)
+     (Stone-At ?amount ?loc-goal))
+)
+
+(:method(Transport-Same ?amount ?loc-goal)
+  ((Stone-At ?n1 ?loc-cur)(call > ?n1 ?amount)
+    (Stone-At ?n2 ?loc )(different ?loc ?loc-cur))
+
+  ((!load ?loc-cur ?team (call - ?n1 ?amount))
+    (!move ?team ?loc-cur ?loc)
+    (!unload ?loc ?team (call - ?n1 ?amount)))
+
+  ((Stone-At ?n1 ?loc-cur)(call < ?n1 ?amount)
+    (Stone-At ?n2 ?loc)(different ?loc ?loc-cur)(call > ?n2 (call - ?amount ?n1)))
+
+  ((!move ?team ?loc-cur ?loc)
+     (Stone-At ?amount ?loc-goal))
+)
+
+)
+)

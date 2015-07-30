@@ -1,0 +1,227 @@
+(defdomain SmartLift
+ (
+  ;;---------------axiom-----------------------
+  (:- (same ?x ?x) nil)
+  (:- (different ?x ?y) ((not (same ?x ?y))))
+  ;;--------------Operators------------------
+
+  (:operator(!carry ?lift ?loc ?person)
+   ((Lift-At ?lift ?loc)
+    (Floor-Current ?loc ?person ?n)(call > ?n 0)
+    (LiftAbility ?lift ?person ?capacity ?inside)(call < ?inside 1))
+
+   ((LiftAbility ?lift ?person ?capacity ?inside)
+    (Floor-Current ?loc ?person ?n))
+
+   ((Floor-Current ?loc ?person 0)
+    (LiftAbility ?lift ?person ?capacity (call + ?inside 1)
+    )
+    )
+  )
+
+  (:operator (!move ?sd ?ed ?lift ?loc-from ?loc-to)
+   ((Lift-At ?lift ?loc-from)
+   (EndDistance ?lift ?ed1))
+
+   ((Lift-At ?lift ?loc-from)
+    (EndDistance ?lift ?ed1))
+
+   ((Lift-At ?lift ?loc-to)
+    (EndDistance ?lift ?ed))
+  )
+
+  (:operator (!unload ?lift ?loc ?person)
+   (
+    (Lift-At ?lift ?loc)
+    (Floor-Current ?loc ?person ?n)(call < ?n 1)
+    (LiftAbility ?lift ?person ?capacity ?inside)(call > ?inside 0)
+    )
+    
+    (
+    (LiftAbility ?lift ?person ?capacity ?inside)
+    (Floor-Current ?loc ?person ?n)
+    )
+
+	(
+	;;(Floor-Goal ?loc ?person (call + ?n 1))
+    (LiftAbility ?lift ?person ?capacity (call - ?inside 1))
+    (Floor-Current ?loc ?person (call + ?n 1)))
+    
+
+   
+  )
+
+;;-----------General Operator----------   
+ (:operator(!!return-back)
+  ()
+  ()
+  ()
+ )
+
+;;----------------Methods-----------------
+
+;;branch0
+(:method(SmartLift ?loc-from ?loc-to ?person ?n )
+ (:sort-by ?ed < (
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  (Lift-At ?lift ?loc-to1)(not(Floor-Current ?loc-to1 ?person ?n))
+  (DistanceBetween ?lift ?loc-from ?loc-to ?x)
+  (or(DistanceBetween ?lift ?loc-to1 ?loc-from ?x1)(AvailableShift ?lift ?loc-to1 ?loc-from ?x1))
+  (EndDistance ?lift ?ed))
+ )
+ (
+  (!move ?ed (call + ?ed ?x1) ?lift ?loc-to1 ?loc-from)
+  (SmartLift ?loc-from ?loc-to ?person ?n)
+ )
+
+
+
+
+
+;;branch1
+ (:sort-by ?ed <(
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  (Lift-At ?lift ?loc-from)
+  (LiftAbility ?lift ?person ?capacity ?inside)(call < ?inside 1)
+  (EndDistance ?lift ?ed )
+  (DistanceBetween ?lift ?loc-from ?loc-to ?x )))
+
+  (
+   (!carry ?lift ?loc-from ?person)
+   (!move ?ed (call + ?ed ?x) ?lift ?loc-from ?loc-to)
+   (!unload ?lift ?loc-to ?person)
+   (SmartLift ?loc-from ?loc-to ?person ?n)
+  )
+
+
+
+
+
+
+;;branch2
+  ;;(:sort-by ?ed2 < 
+  (
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+
+  (Lift-At ?lift1 ?loc-from)
+  (Lift-At ?lift2 ?loc-to2)
+  ;;(different ?loc-to2 ?loc-exchange)
+   
+  (AvailableExchange ?lift1 ?lift2 ?loc-exchange)
+
+  (or(DistanceBetween ?lift2 ?loc-to2 ?loc-exchange ?x2)(AvailableShift ?lift ?loc-to2 ?loc-exchange ?x2))
+
+  (EndDistance ?lift2 ?ed2)
+   ;;)
+  )
+  
+ (
+  (!move ?ed2 (call + ?ed2 ?x2) ?lift2 ?loc-to2 ?loc-exchange)
+  (SmartLift ?loc-from ?loc-to ?person ?n)
+ )
+ 
+ 
+ 
+
+
+
+
+;;branch3
+  (:sort-by ?ed > (
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  (Lift-At ?lift1 ?loc-to1)
+  
+  (or(not(Lift-At ?lift3 ?loc-from))(not(Lift-At ?lift2 ?loc-from)))
+  
+  (different ?loc-to1 ?loc-from)
+  (or(DistanceBetween ?lift1 ?loc-to1 ?loc-from ?x1)(AvailableShift ?lift1 ?loc-to1 ?loc-from ?x1))
+
+  (EndDistance ?lift1 ?ed))
+ )
+ (
+  (!move ?ed (call + ?ed ?x1) ?lift1 ?loc-to1 ?loc-from)
+  (SmartLift ?loc-from ?loc-to ?person ?n)
+ )
+
+ 
+  
+
+
+
+
+;;branch4
+ (
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  
+  (Lift-At ?lift1 ?loc-from)
+  
+  (Lift-At ?lift2 ?loc-to2)
+  (same ?loc-to2 ?loc-exchange) 
+  (AvailableExchange ?lift1 ?lift2 ?loc-exchange)
+     
+  ;;(AvailableExchange ?lift1 ?lift2 ?loc-exchange)
+  
+  ;;(not(same ?loc-exchange ?loc-to))(not(same ?loc-exchange ?loc-from))
+  
+  (LiftAbility ?lift1 ?person ?capacity ?inside1)(call < ?inside1 1)
+   
+  (DistanceBetween ?lift1 ?loc-from ?loc-exchange ?x1)(call > ?x1 0)
+   
+  (EndDistance ?lift1 ?ed1)
+  
+  
+  )
+ (
+  (!carry ?lift1 ?loc-from ?person)
+  (!move ?ed1 (call + ?ed1 ?x1) ?lift1 ?loc-from ?loc-exchange)
+  (!unload ?lift1 ?loc-exchange ?person)
+  
+  (SmartLift ?loc-from ?loc-to ?person ?n)
+ )
+
+ 
+ 
+
+
+
+
+;;branch5
+ (
+   (Lift-At ?lift2 ?loc-exchange)
+   (LiftAbility ?lift2 ?person ?capacity ?inside2)(call < ?inside2 1)
+   (DistanceBetween ?lift2 ?loc-exchange ?loc-to ?x2)(call > ?x2 0)
+   (EndDistance ?lift2 ?ed2)
+ )
+ 
+ (
+ (!carry ?lift2 ?loc-exchange ?person)
+  (!move ?ed2 (call + ?ed2 ?x2) ?lift2 ?loc-exchange ?loc-to)
+  (!unload ?lift2 ?loc-to ?person)
+ (SmartLift ?loc-from ?loc-to ?person ?n)
+ )
+
+ ()
+ ((!!return-back))
+)  
+
+
+(:method (ExchangeFloor ?lift1 ?lift2 ?loc-exchange ?loc-from ?loc-to ?loc-to2)
+  (:sort-by ?TotalED <( 
+   (AvailableExchange ?lift1 ?lift2 ?loc-exchange)  
+   
+   (different ?loc-from ?loc-exchange)
+
+  (DistanceBetween ?lift2 ?loc-to2 ?loc-exchange ?x1)(call > ?x1 0)
+  (DistanceBetween ?lift1 ?loc-from ?loc-exchange ?x3)(call > ?x3 0)
+  (DistanceBetween ?lift2 ?loc-exchange ?loc-to ?x4)(call > ?x4 0)
+
+  (assign ?TotalED (call + ?x1 ?x3 ?x4))
+  ))
+ (
+   
+ )
+)
+
+))
+
+

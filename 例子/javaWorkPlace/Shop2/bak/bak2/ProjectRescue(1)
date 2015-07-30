@@ -1,0 +1,306 @@
+(defdomain ProjectRescue
+ (
+ ;;-----------------------------axiom----------------------------------------
+  (:- (same ?x ?x) nil)
+  (:- (different ?x ?y) ((not (same ?x ?y))))
+ ;;-----------------------------operator----------------------------------------
+ ;;---------------------工程抢险----------------------------
+  (:operator (!OrganizePipingTeam1 ?st ?et ?loc)
+    ;;前提条件
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (MaxRescueTeamID ?n1);;抢险队最大编号      
+      ;;-------------------必要的计算---------------------------
+      (assign ?n (call + ?n1 1))
+     )
+    ;;删除状态
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (MaxRescueTeamID ?n1);;抢险队最大编号
+     )
+    ;;添加状态
+     (
+      (StartTime ?st)(EndTime ?et);;操作时间
+      (MaxRescueTeamID ?n);;抢险队最大编号
+      (loc-at ?n ?loc)
+      ;;添加需求——首批
+      (ResourceOrder ?n 120 labour 2000)
+      (ResourceOrder ?n 120 stone 800)
+      (ResourceOrder ?n 120 weavingbag 4000)
+      (ResourceOrder ?n 120 woodpile 600)
+      (ResourceOrder ?n 120 geotextile 400)
+      (ResourceOrder ?n 120 earthwork 2000)
+      ;;添加需求——后续
+      (ResourceOrder ?n 180 stone 600)
+      (ResourceOrder ?n 230 stone 600)
+      (ResourceOrder ?n 300 stone 600)
+      
+      (ResourceOrder ?n 200 weavingbag 8000)
+      (ResourceOrder ?n 300 weavingbag 8000)
+      
+      (ResourceOrder ?n 160 woodpile 400)
+      (ResourceOrder ?n 250 woodpile 1000)
+      
+      (ResourceOrder ?n 200 geotextile 1000)
+      (ResourceOrder ?n 280 geotextile 600)
+      
+      (ResourceOrder ?n 240 earthwork 5000)
+      (ResourceOrder ?n 300 earthwork 3000)
+     )
+    ;;消耗（忽略）
+   )
+ 
+   (:operator (!PipingRescue1 ?team ?st)
+    ;;前提条件
+     (
+      (StartTime ?st1);;操作时间
+     )
+    ;;删除状态
+     (
+      (StartTime ?st1)
+     )
+    ;;添加状态
+     (
+      (StartTime ?st)
+     )
+    ;;消耗（忽略）
+   )
+ ;;---------------------------资源运输------------------------------
+ (:operator (!Transport ?st ?et ?team ?res ?amount ?loc-from ?loc-to)
+    ;;前提条件
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (StartUsing ?team ?st2)(EndUsing ?team ?et2);;队伍使用时间
+      (RemainRes ?loc-from ?tx ?res ?n1);;储备点资源情况
+      ;;(HaveRes ?loc-to ?res ?n2);;需求点资源情况
+      (Cost money ?team ?m1)(TotalCost money ?tm1);;资金消耗
+      ;;----------------------比较前提-------------------------
+      (call >= ?n1 ?amount)
+      ;;-------------------必要的计算---------------------------
+      (assign ?tst ?st)(assign ?tet ?et);;队伍使用时间赋值
+      (assign ?fn (call - ?n1 ?amount));;储备点资源赋值
+      (assign ?tn (call + ?n2 ?amount));;需求点资源赋值
+      (assign ?mt (call + ?m1 1000))(assign ?tmt (call + ?tm1 1000));;资金赋值
+     )
+    ;;删除状态
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (StartUsing ?team ?st2)(EndUsing ?team ?et2);;队伍使用时间
+      (RemainRes ?loc-from ?tx ?res ?n1);;储备点资源情况
+      (Cost money ?team ?m1)(TotalCost money ?tm1);;资金消耗
+      (loc-at ?team ?loc-from);;队伍出发地删除
+     )
+    ;;添加状态
+     (
+      (StartTime ?st)(EndTime ?et);;操作时间
+      (StartUsing ?team ?tst)(EndUsing ?team ?tet);;队伍使用时间
+      (RemainRes ?loc-from ?tx ?res ?fn);;储备点资源情况
+      ;;(HaveRes ?loc-to ?res ?tn);;需求点资源情况
+      (Cost money ?team ?mt)(TotalCost money ?tmt);;资金消耗
+      (loc-at ?team ?loc-to);;队伍目的地添加
+     )
+    ;;消耗（忽略）
+   )
+   ;;删除已完成的运输订单
+   (:operator (!!DelTransportDemand ?et ?res ?loc-from ?loc-to)
+    ((TransportDemand ?et ?res ?amount ?loc-from ?loc-to))
+    ((TransportDemand ?et ?res ?amount ?loc-from ?loc-to))
+    ()
+   )
+   
+    (:operator (!Move ?st ?et ?team ?loc-from ?loc-to)
+    ;;前提条件
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (StartUsing ?team ?st2)(EndUsing ?team ?et2);;队伍使用时间
+      (Cost money ?team ?m1)(TotalCost money ?tm1);;资金消耗
+      (loc-at ?team ?loc-from);;队伍出发地删除
+      ;;-------------------必要的计算---------------------------
+      (assign ?mt (call + ?m1 1000))(assign ?tmt (call + ?tm1 1000));;资金赋值
+     )
+    ;;删除状态
+     (
+      (StartTime ?st1)(EndTime ?et1);;操作时间
+      (StartUsing ?team ?st2)(EndUsing ?team ?et2);;队伍使用时间
+      (Cost money ?team ?m1)(TotalCost money ?tm1);;资金消耗
+      (loc-at ?team ?loc-from);;队伍出发地删除
+     )
+    ;;添加状态
+     (
+      (StartTime ?st)(EndTime ?et);;操作时间
+      (StartUsing ?team ?st)(EndUsing ?team ?et);;队伍使用时间
+      (Cost money ?team ?mt)(TotalCost money ?tmt);;资金消耗
+      (loc-at ?team ?loc-to);;队伍目的地添加
+     )
+    ;;消耗（忽略）
+   )
+   
+   ;;------------------------------物资需求处理------------------------------------
+  (:operator(!!DealResourceOrder ?loc-from ?team ?time ?res ?amount)
+  ;;前提条件
+  ((ResourceOrder ?team ?time ?res ?amount)
+   (loc-at ?team ?loc)
+  )
+  ;;删除状态
+  ((ResourceOrder ?team ?time ?res ?amount)
+  )
+  ;;添加状态
+  (
+   (TransportDemand ?time ?res ?amount ?loc-from ?loc)
+  )
+  ;;消耗（忽略）
+  )
+  
+
+
+  ;;用来处理总需求的
+  (:operator(!ResOutbound ?loc-from ?loc-to ?st ?et ? amount);;还没写物资需求转化为运输需求,这个只为转移安置准备
+  ;;前提条件
+  ((StartTime ?st1)(EndTime ?et1);;操作时间
+   (TotalNeed ?t1 ?loc-to ?res ?n1);;总需求
+   (Cost money ?loc-from ?m)(TotalCost money ?mt);;资金消耗
+  )
+  ;;删除状态
+  ((StartTime ?st1)(EndTime ?et1);;操作时间
+   (Cost money ?loc-from ?m)(TotalCost money ?mt);;资金消耗
+  )
+  ;;添加状态
+  ((StartTime ?st)(EndTime ?et);;操作时间
+   (Cost money ?loc-from (call + ?m 200))(TotalCost money (call + ?mt 200));;资金消耗
+  )
+  ;;消耗（忽略）
+  )  
+  
+  (:operator(!ResRaise ?loc-from ?res ?team ?st ?et ?n);;资源筹集操作
+  ((RemainRes ?loc-from ?tx ?res ?fn);;储备点资源情况
+  )
+  ((RemainRes ?loc-from ?tx ?res ?fn);;储备点资源情况
+  )
+  ((RemainRes ?loc-from ?et ?res (call + ?fn ?n));;储备点资源情况
+  )
+  )
+   
+  ;;--------------------------------------单位任务完成操作-------------------------------------------
+  ;;------通用操作------
+  (:operator(!!return-back)
+  ;;前提条件
+  ()
+  ;;删除状态
+  ()
+  ;;添加状态
+  ()
+  ;;消耗（忽略）
+  )
+ ;;-----------------------------------------------------------------------------
+ ;;-----------------------------method------------------------------------------
+ ;;****************************现场抢险*****************************
+ (:method(ProjectRescue1 ?st ?loc)
+  ((assign ?et (call +  ?st 0.2)))
+  ((!OrganizePipingTeam1 ?st ?et ?loc)
+   (PipingRescue1 ?et ?loc)
+  )
+ )
+ 
+ (:method(PipingRescue1 ?st ?loc)
+  ((loc-at ?team ?loc))
+  ((!PipingRescue1 ?team ?st)
+   (SupplyResource))
+ )
+ 
+ 
+;;**********************资源需求转化为运输需求****************************
+ (:method (SupplyResource)
+  (:sort-by ?time <(
+   (ResourceOrder ?team ?time ?res ?amount)(loc-at ?team ?loc-to)
+  ))
+  (
+   (DealOrder ?loc-to ?team ?time ?res ?amount)
+   (SupplyResource)
+  )
+  ()
+  ((!!return-back))
+ )
+ 
+ (:method (DealOrder ?loc-to ?team ?time ?res ?amount)
+  (:sort-by ?distince <(
+   (DistinceBetween ?loc-from ?loc-to ?distince)
+   (RemainRes ?loc-from ?tx ?res ?nx)
+  ))
+  ((!!DealResourceOrder ?loc-from ?team ?time ?res ?amount)
+   (RaiseResource ?loc-from ?res ?team ?time ?amount)
+   (TransportResource))
+ )
+;;***********************物资筹集************************
+ 
+ (:method (RaiseResource ?loc-from ?res ?team ?et ?amount)
+  ((RemainRes ?loc-from ?st ?res ?fn)
+   (SafeStock ?loc-from ?res ?sn)
+   (assign ?n (call - ?fn ?sn ?amount))
+   (call < ?n 0)
+  )
+  ((!ResRaise ?loc-from ?res ?team ?st ?et (call - 0 ?n)))
+  ()
+  ((!!return-back))
+ )
+ 
+;;***************************资源运输***********************
+ (:method (TransportResource)
+   (:sort-by ?et <(
+     (TransportDemand ?et ?res ?amount ?loc-from ?loc-to)              
+   ))
+   (
+     (TransportDispatch ?et ?res ?amount ?loc-from ?loc-to)
+     (TransportResource)
+   )
+   ()
+   ((!!return-back))
+ )
+ 
+ (:method (TransportDispatch ?et ?res ?amount ?loc-from ?loc-to)
+   ((call > ?amount 0)
+   )
+   (
+     (MoveDispatch ?loc-from)
+     (TransportTeam ?et ?res ?amount ?loc-from ?loc-to)
+   )
+   ()
+   ((!!DelTransportDemand ?et ?res ?loc-from ?loc-to))
+ )
+ 
+ (:method (MoveDispatch ?loc-from)
+   (
+    not((loc-at ?loc-from ?team)(TeamOf Transport ?team))
+   )
+   (
+     (MoveTeam ?loc-from)
+   )
+   ()
+   ((!!return-back))
+ )
+ 
+  (:method (MoveTeam ?loc-to)
+   (:sort-by ?distance < (
+    (SpentTime ?team ?loc-from ?loc-to ?pt)(EndUsing ?team ?st)(assign ?distance (call + ?pt ?st))
+    (loc-at ?team ?loc-from)
+   ))
+   (
+     (!Move ?st ?distance ?team ?loc-from ?loc-to)
+     ;;(!Move ?st ?et ?team ?loc-from ?loc-to)
+   )
+  )
+ 
+ (:method (TransportTeam ?et ?res ?amount ?loc-from ?loc-to)
+   (:sort-by ?st <(
+     (TeamOf Transport ?team)(EndUsing ?team ?st)(loc-at ?team ?loc-from) 
+     (SpentTime ?team ?loc-from ?loc-to ?pt)(call >= (call - ?et ?st) ?pt)
+     (TransportAbility ?res ?team ?n)(assign ?tn (call min ?amount ?n))            
+   ))
+   (
+     (!Transport ?st (call + ?pt ?st) ?team ?res ?tn ?loc-from ?loc-to)
+     (TransportDispatch ?et ?res (call - ?amount ?tn) ?loc-from ?loc-to)
+   )
+ )
+ ;;*****************************************************************************
+ ;;-------------------------------end-------------------------------------------
+ )
+)

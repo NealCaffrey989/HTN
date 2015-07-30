@@ -1,0 +1,17 @@
+6
+same
+different
+stone
+resourcedemand
+earthwork
+resource
+3
+demandhandle
+projectrescue
+resoucelackjudge
+5
+!dangerousdemand-1
+!dangerousdemand-2
+!!resoucelackhandle
+!handleresoucedemand
+!!return-back

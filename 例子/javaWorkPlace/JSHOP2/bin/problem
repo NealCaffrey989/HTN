@@ -1,0 +1,123 @@
+(defproblem problem Flood_Evacuate
+ (
+  ;;------时间状态-------
+  (StartTime 0)(Duration 0)
+  ;;----------------------------------人员疏散----------------------------------------------
+  (End-Time bus-1 0)
+  (End-Time bus-2 0)
+  (End-Time bus-3 0)
+  (End-Time bus-4 0)
+  (End-Time bus-5 0)
+  (End-Time this 0)
+  (End-Time this-1 0)
+ 
+  ;;------资源状态--------
+  (Cost-Resource Res-gas 0)
+  ;;---A1地点的状态---
+  (person-of A1 6000)
+  (owner-at oa1 A1)
+  (Res-gas oa1 5000)
+  (distance-between A1 B1 50)
+  (distance-between A1 B2 45)
+  (distance-between A1 B3 60)
+  (distance-between A1 A2 40)
+  ;;---A2地点的状态---
+  (person-of A2 4000)
+  (owner-at oa2 A2)
+  (Res-gas oa2 5000)
+  (distance-between A2 B1 60)
+  (distance-between A2 B2 45)
+  (distance-between A2 B3 50)
+  (distance-between A2 A1 40)
+  ;;---B1地点的状态---
+  (capacity-of B1 4000)
+  (owner-at ob1 B1)
+  (Res-gas ob1 5000)
+  (distance-between B1 A1 50)
+  (distance-between B1 A2 60)
+  (distance-between B1 B2 20)
+  (distance-between B1 B3 30)
+
+  ;;---B2地点的状态---
+  (capacity-of B2 3000)
+  (owner-at ob2 B2)
+  (Res-gas ob2 5000)
+  (distance-between B2 A1 45)
+  (distance-between B2 A2 45)
+  (distance-between B2 B1 20)
+  (distance-between B2 B3 15)
+  ;;---B3地点的状态---
+  (capacity-of B3 5000)
+  (owner-at ob3 B3)
+  (Res-gas ob3 5000)
+  (distance-between B3 A1 60)
+  (distance-between B3 A2 50)
+  (distance-between B3 B1 30)
+  (distance-between B3 B2 15)
+  ;;--C点为扩展收容区--
+  (number-of C 0)
+  ;;---bus-1客车的状态---
+  (bus-at-loc bus-1 A1) 
+  (carry-ability bus-1 500)
+  (carryed-person bus-1 0)
+  (speed-of bus-1 50)
+  (bus-mile-spend Res-gas bus-1 0.5)
+  ;;---bus-2客车的状态---
+  (bus-at-loc bus-2 A1) 
+  (carry-ability bus-2 500)
+  (carryed-person bus-2 0)
+  (speed-of bus-2 50)
+  (bus-mile-spend Res-gas bus-2 0.5)
+  ;;---bus-3客车的状态---
+  (bus-at-loc bus-3 A1) 
+  (carry-ability bus-3 500)
+  (carryed-person bus-3 0)
+  (speed-of bus-3 50)
+  (bus-mile-spend Res-gas bus-3 0.5)
+  
+  ;;---bus-4客车的状态---
+  (bus-at-loc bus-4 A2) 
+  (carry-ability bus-4 400)
+  (carryed-person bus-4 0)
+  (speed-of bus-4 60)
+  (bus-mile-spend Res-gas bus-4 0.5)
+  ;;---bus-5客车的状态---
+  (bus-at-loc bus-5 A2) 
+  (carry-ability bus-5 400)
+  (carryed-person bus-5 0)
+  (speed-of bus-5 60)
+  (bus-mile-spend Res-gas bus-5 0.5)
+  ;;-----------------------------------------物资疏散---------------------------------------------
+  ;;----------时间--------------
+  (End-Time track-1 0)
+  (End-Time track-2 0)
+  ;;-----------A3地点状态------------
+  (goods-of A3 1000)
+  (owner-at oa3 A3)
+  (Res-gas oa3 5000)
+  (distance-between A3 E 70)
+  ;;-------------E点状态-----------------
+  (capacity-of-goods E 5000)
+  (owner-at oe1 E)
+  (Res-gas oe1 5000)
+  (distance-between E A3 70)
+  ;;---------------track-1货车状态-----------------
+  (track-at-loc track-1 A3) 
+  (carry-ability track-1 48)
+  (carryed-goods track-1 0)
+  (speed-of track-1 50)
+  (track-mile-spend Res-gas track-1 1)
+  ;;---------------track-2货车状态-----------------
+  (track-at-loc track-2 A3) 
+  (carry-ability track-2 40)
+  (carryed-goods track-2 0)
+  (speed-of track-2 40)
+  (track-mile-spend Res-gas track-2 1)
+ )
+
+ (:unordered
+  (evacuation-people this 0)
+  ;;(evacuation-people this)
+  ;;(evacuation-goods this-1 0)
+ )
+)

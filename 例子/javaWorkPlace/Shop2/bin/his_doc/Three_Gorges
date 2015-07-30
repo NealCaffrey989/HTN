@@ -1,0 +1,332 @@
+(defdomain Three_Gorges
+ (
+    ;;--axioms--
+    ;;本次开闸可否完成
+    (:-(open-can-finish ?fIn ?t ?fOut ?Max ?Min)
+        can
+        ;;((call < ?fIn ?fOut)(call <= (?fOut-?fIn)*?t (?Max-?Min)*1000)(call = ?wl ?Max))
+        ((call < ?fIn ?fOut)
+         (call <= (call * (call - ?fOut ?fIn) ?t) (call * (call - ?Max ?Min) 1000)))
+    )
+    ;;本次关闸可否完成
+    (:-(close-can-finish ?fIn ?t ?fOut ?wl ?Max)
+        can
+        ;;((call < ?fOut ?fIn)(call <= (?fIn-?fOut)*?t (?Max-?wl)*1000)(call < ?wl ?Max))
+        ((call < ?fOut ?fIn)(call <= (call * (call - ?fIn ?fOut) ?t) (call * (call - ?Max ?wl) 1000))(call < ?wl ?Max))
+    )
+    ;;判定是否完成任务
+    (:-(task-finished ?wl ?Max)
+       finish
+       ((call <= ?wl ?Max))
+    )
+    (:-(same ?x ?x) nil)
+      
+    ;;--operator--
+    (:operator
+    ;;开完闸就完成了任务
+    (!open-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout)(water-level ?wl)(remain-time ?t)(duration ?t1))
+     ((water-level ?wl)(remain-time ?t)(duration ?t1)) 
+       ;;((water-level (?Max-(?ofout-?fIn)*(?t)/1000))(remain-time 0))
+     ((water-level (call - ?Max (call / (call * (call - ?ofout ?fIn) ?t) 1000)))
+      (remain-time 0)
+      (duration ?t))
+      100
+   )
+   
+   (:operator (!open-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max ?Min)
+    ;;本次开闸,水位下降,不能完成任务
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout)(water-level ?wl)(remain-time ?t)(duration ?t1))
+     ((water-level ?wl)(remain-time ?t)(duration ?t1))
+     ;;((water-level ?Min)(remain-time (?t-(?Max-?Min)*1000/(?ofout-?fIn)))
+     ((water-level ?Min)
+      (remain-time (call - ?t (call / (call * (call - ?Max ?Min) 1000) (call - ?ofout ?fIn))))
+      (duration (call / (call * (call - ?Max ?Min) 1000) (call - ?ofout ?fIn))))
+    )
+    (:operator
+    ;;持续所有闸门开启,水位上升,无法完成
+    (!open-sluice-3 ?sluice ?ofout ?fIn ?t ?wl)
+     ((call >= ?fIn ?ofout)(water-level ?wl)(remain-time ?t)(duration ?t1))
+     ((water-level ?wl)(remain-time ?t)(duration ?t1))
+     ;;((water-level (?fIn-?ofout)*?t/1000+wl)(remain-time 0))
+     ((water-level (call + (call / (call * (call - ?fIn ?ofout) ?t) 1000) ?wl))
+      (remain-time 0)
+      (duration ?t))
+     ;;((water-level 150)(remain-time 0))
+     ;;((water-level (call + ?wl 10))(remain-time 0))
+    )
+   
+   (:operator
+    ;;至少有一个闸门没开启，其他持续开启,水位上升,可以完成
+    (!open-sluice-4 ?sluice ?ofout ?fIn ?t ?wl)
+     ((call >= ?fIn ?ofout)(duration ?t1))
+     ((duration ?t1))
+     ((duration ?t))
+   )
+   
+    (:operator
+    ;;本次关闸也能完成任务
+    (!close-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout)(water-level ?wl)(remain-time ?t)(duration ?t1))
+     ((water-level ?wl)(remain-time ?t)(duration ?t1))
+     ;;((water-level ((?fIn-?cfout)*?t/1000+?wl))(remain-time 0))
+     ((water-level (call + (call / (call * (call - ?fIn ?cfout) ?t) 1000) ?wl))
+      (remain-time 0)
+      (duration ?t))
+   )
+    
+   (:operator
+    ;;本次关闸不能完成任务
+    (!close-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout)(water-level ?wl)(remain-time ?t)(duration ?t1))
+     ((water-level ?wl)(remain-time ?t)(duration ?t1))
+       ;;((water-level ?Max)(remain-time ((?Max-?wl)/(?fIn-?cfout))))
+       ((water-level ?Max)
+        (remain-time (call - ?t (call / (call - ?Max ?wl) (call - ?fIn ?cfout))))
+        (duration (call / (call - ?Max ?wl) (call - ?fIn ?cfout))))
+   )
+    
+    (:operator
+    ;;不用任何操作
+    (!do-nothing)
+     ;; instantaneous preconditions
+     ((remain-time ?t)(duration ?t1))
+     ((remain-time ?t)(duration ?t1))
+     ((remain-time 0)(duration ?t))
+     10
+   )
+   
+    (:operator
+    ;;用于递归返回
+    (!!re-turn)
+     ()
+     ()
+     ()
+    )
+
+    (:operator
+    ;;巡堤查险
+    (!patrol ?t)
+     ((duration ?t1))
+     ((duration ?t1))
+     ((duration ?t))
+     20
+    )
+    
+    (:operator
+    ;;检查供电设备
+    (!check-electric-equipment)
+     ((equipment-checked ?checked)(duration ?t1))
+     ((equipment-checked ?checked)(duration ?t1))
+     ((equipment-checked true)(duration 1))
+     5
+    )
+    
+    (:operator
+    ;;关闭发电机组
+    (!close-electric-generator ?t)
+     ((equipment-checked true)(duration ?t1))
+     ((duration ?t1))
+     ((duration ?t))
+     50
+    )
+    
+    
+   ;;--method--
+    (:method
+    ;;判断输入条件
+     (remain-time ?t1)
+       (
+        (fIn ?fIn)
+        (remain-time ?t)
+        (patrol-water-level ?pwl)
+        (electric-equipment-wl ?eewl)
+        (close-min-ability ?sluice ?smin)
+        )
+         (
+          (schedling-method ?t ?fIn ?pwl ?eewl ?smin)
+         )
+     )
+     
+   (:method
+    ;;判断输入条件
+     (remain-time ?t1)
+       ()
+         ((!do-nothing))
+     )
+          
+   (:method   
+   ;;调度三个单位的方法
+      (schedling-method ?t ?fIn ?pwl ?eewl ?smin)
+       ;;无需调度
+       (
+        (call < ?fIn ?pwl)
+        (call < ?fIn ?eewl)
+        (call < ?fIn ?smin)
+        )
+        (
+           (!do-nothing)
+        )
+        
+        (
+         not((call < ?fIn ?pwl)
+            (call < ?fIn ?eewl)
+            (call < ?fIn ?smin))
+            )
+        (
+           (patrol-schedling-method ?t ?fIn ?pwl)
+           (electric-schedling-method ?t ?fIn ?eewl)
+           (sluice-remain-time ?t)
+        )
+   )
+   
+
+   
+    (:method   
+     ;;巡堤查险调度方法
+      (patrol-schedling-method ?t ?fIn ?pwl)
+       ;;无需调度
+       (
+        (call < ?fIn ?pwl)
+        )
+        (
+           (!!re-turn)
+        )
+        ((call >= ?fIn ?pwl))
+        (
+           (!patrol ?t)
+        )
+    )
+    
+    (:method   
+     ;;电站调度方法
+      (electric-schedling-method ?t ?fIn ?eewl)
+       ;;无需调度
+       (
+        (call < ?fIn ?eewl)
+        )
+        (
+           (!!re-turn)
+        )
+        ((call >= ?fIn ?eewl))
+        (
+           (!check-electric-equipment)
+           (!close-electric-generator (call - ?t 1))
+        )
+    )
+   
+   (:method
+     (sluice-remain-time ?t1)
+      ;;梯调中心闸门调度
+      ;;--无需调度--
+      ;;Case1
+      ;;instantaneous preconditions-1
+       (
+        (remain-time ?t)(fIn ?fIn)
+        (forall(?f)(cfout ?f)(call < ?fIn ?f))
+        )
+      ;;subtasks-1
+      ((!do-nothing))
+
+      ;;--调度范围内--
+      ;;Case2
+      ;;instantaneous preconditions-2
+       ((fIn ?fIn)(water-level ?wl)(Max ?Max)(Min ?Min)(remain-time ?t)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+
+      ;;subtasks-1
+      (
+         (open-sub-sluice ?cfout ?fIn ?t ?wl) 
+         (open-sluice-done ?fIn ?wl ?t ?Max ?Min))
+
+      ;;--高于调度范围--
+      ;;Case3
+      ;;instantaneous preconditions-2
+       ((fIn ?fIn)(water-level ?wl)(Max ?Max)(Min ?Min)(remain-time ?t)
+        (open-max-ability ?sluice ?ofout)
+        (call >= ?fIn ?ofout)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout))
+      ;;subtasks-1
+      (  
+         (open-sub-sluice ?cfout ?fIn ?t ?wl)
+         (!open-sluice-3 ?sluice ?ofout ?fIn ?t ?wl)) 
+    )
+   
+   
+   (:method
+     (open-sluice-done ?fIn ?wl ?t ?Max ?Min)
+    
+      ;;Case1 直接蓄水可以完成任务
+      ;;instantaneous preconditions-2
+       ((remain-time ?t)
+        (call < ?wl ?Max)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (close-can-finish ?fIn ?t ?cfout ?wl ?Max)
+        )
+      ;;subtasks-1
+       ((!close-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl))
+      
+      ;;Case2 直接蓄水不可以完成任务
+      ;;instantaneous preconditions-2
+       ((remain-time ?t)
+        (call < ?wl ?Max)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (not(close-can-finish ?fIn ?t ?cfout ?wl ?Max)))
+      ;;subtasks-2
+       ((!close-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max)
+        (open-sluice-done ?fIn ?Max (call - ?t (call / (call - ?Max ?wl) (call - ?fIn ?cfout))) ?Max ?Min)
+       )
+      
+      ;;Case3 直接泄洪不可以完成任务
+      ;;instantaneous preconditions-2
+       ((remain-time ?t)
+        (call > ?wl ?Min)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (not(open-can-finish ?fIn ?t ?ofout ?Max ?Min))
+        )
+      ;;subtasks-3
+       (
+        (!open-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max ?Min)
+        (open-sluice-done ?fIn ?Min (call - ?t (call / (call * (call - ?Max ?Min) 1000) (call - ?ofout ?fIn))) ?Max ?Min)
+        )
+      
+      ;;Case4 直接泄洪可以完成任务
+      ;;instantaneous preconditions-2
+       ((remain-time ?t)
+        (call > ?wl ?Min)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (open-can-finish ?fIn ?t ?ofout ?Max ?Min)
+        )
+      ;;subtasks-4
+       ((!open-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max))     
+   )
+   
+   ;;--开启下级闸门--
+    (:method
+     (open-sub-sluice ?fout ?fIn ?t ?wl)
+       (
+        (open-ability ?sluice ?f)
+        (close-ability ?sluice ?cfout)
+        (call = ?f ?fout)
+        )
+      ;;subtasks-1
+         (
+          (open-sub-sluice ?cfout ?fIn ?t ?wl)
+          (!open-sluice-4 ?sluice ?fout ?fIn ?t ?wl)
+         )
+         (not(open-ability ?sluice ?fout))
+         ((!!re-turn))
+     )
+   )
+)

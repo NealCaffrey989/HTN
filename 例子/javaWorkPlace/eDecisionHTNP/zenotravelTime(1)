@@ -1,0 +1,371 @@
+(defdomain ZENOTRAVEL
+  (   
+;;------------------------------- axioms ------------------------------------- 
+   (:- (same ?x ?x) ())         
+   (:- (different ?x ?y) ((not (same ?x ?y))))
+
+   (:-(possible-person-in ?city)
+       ((person ?p) (at ?p ?city) (goal ?p ?city2) (different ?city2 ?city)) )
+
+;;------------------------------- operators ------------------------------------- 
+   
+   (:operator (!board ?p ?a ?c)
+         ;;precondition
+         ((person ?p) (aircraft ?a) (city ?c) 
+	    (at ?a ?c) (at ?p ?c) 
+	    (boarding-time ?duration)
+    	    )
+
+         ;;delete list for instantaneous effects
+         ((at ?p ?c))
+         ;;add list for instantaneous effects
+         ()
+
+         ;;delete list for delayed effects
+         ()
+         ;;add list for delayed effects
+         (((in ?p ?a) + ?duration)
+          )
+
+         ;;duration
+         ?duration
+         ;;cost
+         0.001
+    )          
+
+   (:operator (!debark ?p ?a ?c)
+      ;;precondition
+      ((person ?p) (aircraft ?a) (city ?c) 
+       (at ?a ?c) (in ?p ?a) 
+       (debarking-time ?duration)
+       )
+
+      ;; delete list for instantaneous effects
+      ((in ?p ?a))
+      ;; add list for instantaneous effetcs
+      ()
+
+      ;; delete list for delayed effects
+      ()     
+      ;; add list for delayed effects
+      (((at ?p ?c) + ?duration)
+       )
+
+      ;;duration
+      ?duration
+      ;;cost
+      0.001
+   )
+  
+         
+  (:operator (!refuel ?a ?c)
+      ;;precondition
+      ((aircraft ?a) (city ?c) (at ?a ?c) 
+       (fuel ?a ?fuel) (capacity ?a ?cap)
+       (refuel-rate ?a ?rate)
+	   (call > ?cap ?fuel)
+	   (assign ?duration (call / (call - ?cap ?fuel) ?rate))
+       )
+
+      ;;delete list for instantaneous effects
+      ((fuel ?a ?fuel))
+      ;;add list for instantaneous effects
+      ()
+
+      ;;delete list for delayed effects
+      ()
+      ;;add list for delayed effects
+      (((fuel ?a ?cap) + ?duration)
+       )
+
+      ;;duration
+      ?duration
+      ;;cost
+      0.001
+   )
+
+  
+  (:operator (!zoom ?a ?c1 ?c2)
+      ;;precondition
+      ((aircraft ?a) (city ?c1) (city ?c2)
+       (at ?a ?c1) (distance ?c1 ?c2 ?dist) 
+       (fast-speed ?a ?speed) (fast-burn ?a ?burn)
+       (fuel ?a ?fuel)
+       (call >= ?fuel (call * ?dist ?burn))
+       (total-fuel-used ?total-fuel)
+       (assign ?new-total (call + ?total-fuel (call * ?dist ?burn)))
+       (assign ?duration  (call / ?dist ?speed))
+       (assign ?new-fuel (call - ?fuel (call * ?dist ?burn)))
+       )
+
+      ;;delete list for instantaneous effects     
+      ((at ?a ?c1) (total-fuel-used ?total-fuel) (fuel ?a ?fuel))
+      ;;add list for instantaneous effects
+      ((total-fuel-used ?new-total))
+      
+      ;;delete list for delayed effects
+      ()
+      ;;add list for delayed effects
+      (((at ?a ?c2) + ?duration)
+       ((fuel ?a ?new-fuel) + ?duration)
+      )
+      ;;duration
+      ?duration
+      ;;cost    
+      0.001
+   )
+     
+    
+  (:operator (!fly ?a ?c1 ?c2)
+      ;;precondition
+      ((aircraft ?a) (city ?c1) (city ?c2)
+       (at ?a ?c1) (distance ?c1 ?c2 ?dist) 
+       (slow-burn ?a ?burn) (slow-speed ?a ?speed)
+       (fuel ?a ?fuel)
+       (call >= ?fuel (call * ?dist ?burn))
+       (total-fuel-used ?total-fuel)
+       (assign ?new-total (call + ?total-fuel (call * ?dist ?burn)))      
+       (assign ?new-fuel (call - ?fuel (call * ?dist ?burn)))
+       (assign ?duration (call / ?dist ?speed))
+       )
+      ;; delete list for instantaneous effects
+      ((at ?a ?c1)(total-fuel-used ?total-fuel)(fuel ?a ?fuel))
+      ;; add list for instantaneous effects
+      ((total-fuel-used ?new-total))
+
+      ;; delete list for delayed effects
+      ()
+      ;; add list for delayed effects
+      (((at ?a ?c2) + ?duration)
+       ((fuel ?a ?new-fuel) + ?duration)
+      )
+
+      ;;duration
+      ?duration
+      ;;cost
+      0.001
+   ) 
+   
+   
+  (:operator (!!assert ?g ) 
+      ;;precondition
+      () 
+      ;;instantaneous effects
+      () 
+      ?g
+      ;;delayed effects
+      ()
+      ()
+      ;;duration
+      0
+      ;;cost
+      0
+  )      
+ (:operator (!!ra ?D ?A ) 
+      ;;precondition
+      () 
+      ;;instantaneous 
+      ?D 
+      ?A
+      ;;delayed effects
+      ()
+      ()
+      ;;duration
+      0
+      ;;cost     
+      0
+  ) 
+ 
+;;------------------------------ methods -----------------------------------
+
+ (:method (transport-person ?p ?c)
+          ;; Case1: the person is at city ?c 
+          ((at ?p ?c))
+          ()
+          ;;time constraint list-1
+          () 
+  )
+
+ (:method (transport-person ?p ?c2)
+          ;; Case2:  
+          (:sort-by ?rate >
+	          ((at ?p ?c1) (at ?a ?c1) (aircraft ?a) (refuel-rate ?a ?rate)
+	           (not (in-use ?a))
+	           )
+           )
+          ((!!assert ((in-use ?a)))
+           (!board ?p ?a ?c1)
+           (upper-move-aircraft-no-style ?a ?c2)
+           (!debark ?p ?a ?c2)
+           (!!ra ((in-use ?a)) ())
+           )
+          ;;time constraint list-1
+          () 
+  )
+
+ (:method (transport-person ?p ?c2)
+          ;;Case3 
+          (:sort-by ?cost <
+	          ((at ?p ?c1) (aircraft ?a) (at ?a ?c3) (not(in-use ?a))
+                  (different ?c1 ?c3)
+                  (forall (?c) ((dest ?a ?c)) ((same ?c ?c1))) 
+                  (imply ((different ?c3 ?c1)) 
+                         (not (possible-person-in ?c3)))
+	           (travel-cost-info ?a ?c3 ?c1 ?cost ?style)
+                 )
+           )
+          ((!!assert ((in-use ?a)))
+           (upper-move-aircraft ?a ?c1 ?style)
+           (!board ?p ?a ?c1)
+           (upper-move-aircraft-no-style ?a ?c2)
+           (!debark ?p ?a ?c2)
+           (!!ra ((in-use ?a)) ())
+           )
+          ;;time constraint list-1
+          () 
+ )
+   
+ (:method (upper-move-aircraft ?a ?c ?style)
+     Case1  ((at ?a ?c))
+            ()
+            ;;time constraint list-1
+            () 
+     Case2  ((at ?a ?somecity))
+            ((move-aircraft ?a ?somecity ?c ?style))
+            ;;time constraint list-2
+            () 
+ )
+           
+ (:method (upper-move-aircraft-no-style ?a ?c)
+     Case1  ;;precondition-1
+            ((at ?a ?c))
+            ()
+            ;;time constraint list-1
+            () 
+     Case2  ;;precondition-2
+            (:sort-by ?cost < 
+               ((at ?a ?somecity)
+	            (travel-cost-info ?a ?somecity ?c ?cost ?style))
+	         )
+            ((move-aircraft ?a ?somecity ?c ?style))
+            ;;time constraint list-2
+            () 
+  )
+           
+ (:- (travel-cost-info ?a ?from ?to ?cost slow)
+     CASE1
+     ((capacity ?a ?cap) (distance ?from ?to ?dist)
+      (slow-burn ?a ?burn) (call < ?cap (call * ?dist ?burn))
+      (assign ?cost (call - (call ^ 2 23) 1))
+      )
+     CASE2
+     ((distance ?from ?to ?dist) (fuel ?a ?fuel) (refuel-rate ?a ?rate)
+      (slow-burn ?a ?burn) (slow-speed ?a ?speed)
+      (call >= ?fuel (call * ?dist ?burn))
+      (assign ?cost (call /
+			                (call + (call / ?dist ?speed) (call * ?dist ?burn))
+			                ?rate))
+     )
+     CASE3
+     ((capacity ?a ?cap)(distance ?from ?to ?dist) (fuel ?a ?fuel)
+      (slow-burn ?a ?burn) (slow-speed ?a ?speed) (refuel-rate ?a ?rate)
+      (assign ?cost (call / 
+			              (call + 
+                              (call + (call / ?dist ?speed)
+				                      (call / (call - ?cap ?fuel) ?rate)
+                               )
+				              (call * ?dist ?burn)
+                           )
+			          ?rate)
+       ) ;;assign
+      );; CASE3
+ )
+
+ (:- (travel-cost-info ?a ?from ?to ?cost fast)
+     CASE1
+     ((capacity ?a ?cap) (distance ?from ?to ?dist)
+      (fast-burn ?a ?burn) (call < ?cap (call * ?dist ?burn))
+      (assign ?cost (call - (call ^ 2 23) 1))
+      )
+     CASE2
+     ((distance ?from ?to ?dist) (fuel ?a ?fuel) (refuel-rate ?a ?rate)
+      (fast-burn ?a ?burn) (fast-speed ?a ?speed)
+      (call >= ?fuel (call * ?dist ?burn))
+      (assign ?cost (call /
+			              (call + (call / ?dist ?speed)
+				                (call * ?dist ?burn)
+                                 )
+			     ?rate
+                     )
+       )
+      )
+     CASE3
+     ((capacity ?a ?cap)(distance ?from ?to ?dist) (fuel ?a ?fuel)
+      (fast-burn ?a ?burn) (fast-speed ?a ?speed) (refuel-rate ?a ?rate)
+      (assign ?cost (call / 
+			         (call + 
+				          (call +
+				                 (call / ?dist ?speed)
+				                 (call / (call - ?cap ?fuel) ?rate)
+                                   )
+				          (call * ?dist ?burn)
+                            )
+			         ?rate))
+      )
+ )
+      
+
+ (:method (move-aircraft ?a ?from ?to slow)
+          ;;CASE1
+          ((distance ?from ?to ?dist) (slow-burn ?a ?burn)
+	     (fuel ?a ?fuel)
+	     (call > ?fuel (call * ?dist ?burn))
+	     )
+          ((!fly ?a ?from ?to))
+          ;;time constraint list-1
+          () 
+          ;;CASE2  
+	    ()
+	    ((!refuel ?a ?from) 
+	     (!fly ?a ?from ?to)
+           )
+          ;;time constraint list-2
+          () 
+  )
+            
+ (:method (move-aircraft ?a ?from ?to fast)
+      ;;CASE1 
+      ;;precondition-1
+      ((distance ?from ?to ?dist) (fast-burn ?a ?burn)
+	   (fuel ?a ?fuel)
+	   (call > ?fuel (call * ?dist ?burn))
+	   )
+      ;;task list-1
+      ((!zoom ?a ?from ?to))
+      ;;time constraint list-1
+      () 
+	  ;;CASE2
+      ;;precondition-2
+	  ()
+      ;;task list-2
+	  ((!refuel ?a ?from) 
+	   (!zoom ?a ?from ?to)
+       )
+      ;;time constraint list-2
+      ()
+  )
+            
+ (:method (transport-aircraft ?a ?c)
+          ;;precondition
+	      ((not (in-use ?a)))
+          ;;task list
+          ((!!assert ((in-use ?a)))
+           (upper-move-aircraft-no-style ?a ?c)
+           (!!ra ((in-use ?a)) ())
+           )
+          ;;time constraint list
+          ()
+  ) 
+  
+ )
+)

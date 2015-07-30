@@ -1,0 +1,92 @@
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JTextField;
+
+
+public class myPanel extends JPanel implements ActionListener {
+	JProgressBar progressBar;
+	JTextField textField;
+	JButton button_run;
+	JButton button_stop;
+	JLabel label_1;
+	JLabel label_2;
+	Thread thread;
+	public myPanel(JProgressBar pb,JTextField field,JButton button_run,JButton button_stop,JLabel label_1,JLabel label_2){
+		this.progressBar=pb;
+		this.textField=field;
+		this.button_run=button_run;
+		this.button_stop=button_stop;
+		this.label_1=label_1;
+		this.label_2=label_2;
+		init();
+		BuildThread();
+	}
+	public myPanel(){
+		init();
+		BuildThread();
+	}
+	public void init() {
+		// TODO Auto-generated method stub
+		
+		//panel.setLayout(new BorderLayout(5, 5));
+		FlowLayout flowLayout = (FlowLayout) getLayout();
+		flowLayout.setHgap(10);
+		add(label_1);
+		add(label_2);
+		add(textField);
+		add(progressBar);
+		add(button_run);
+		add(button_stop);
+		button_run.addActionListener(this);
+		button_stop.addActionListener(this);
+	}
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		// TODO Auto-generated method stub
+		if(e.getSource()==button_run){
+			if(!(thread.isAlive())&&progressBar.getValue()==0){
+					thread.start();
+					}
+				else if(thread.isAlive()){
+					thread.resume();
+					}
+		       }
+		 if(e.getSource()==button_stop&&thread.isAlive()){
+				thread.suspend();
+				}
+	}
+
+	public void BuildThread(){
+		thread=new Thread(new MyThread1(progressBar,textField));
+		}  
+   class MyThread1 implements Runnable{
+	    JProgressBar pb1;
+	    JTextField field1;
+
+	MyThread1(JProgressBar pb,JTextField field){
+		this.pb1=pb;
+		this.field1=field;
+	}
+
+	public void run() {
+		// TODO 自动生成方法存根
+		
+		while(pb1.getValue()<pb1.getMaximum()){
+			pb1.setValue(pb1.getValue()+Integer.parseInt(field1.getText()));
+			try{
+				//让线程睡眠0.1秒
+				Thread.sleep(100);
+			}catch(InterruptedException e){
+				//e.printStackTrace();
+			}
+		}
+	}
+}
+}

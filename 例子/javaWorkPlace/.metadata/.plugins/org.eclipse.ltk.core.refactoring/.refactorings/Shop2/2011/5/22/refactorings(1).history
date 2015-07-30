@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<session version="1.0">
+<refactoring comment="将资源“/Shop2/src/problem”重命名为“problem1”&#13;&#10;－ 原始元素：“problem”" description="重命名资源“problem”" flags="7" id="org.eclipse.jdt.ui.rename.resource" input="src/problem" name="problem1" stamp="1306413528619" version="1.0"/>
+<refactoring comment="将资源“/Shop2/src/ProjectRescue”重命名为“ProjectRescue1”&#13;&#10;－ 原始元素：“ProjectRescue”" description="重命名资源“ProjectRescue”" flags="7" id="org.eclipse.jdt.ui.rename.resource" input="src/ProjectRescue" name="ProjectRescue1" stamp="1306413536808" version="1.0"/>
+<refactoring comment="将资源“/Shop2/src/problem1”重命名为“problem”&#13;&#10;－ 原始元素：“problem1”" description="重命名资源“problem1”" flags="7" id="org.eclipse.jdt.ui.rename.resource" input="src/problem1" name="problem" stamp="1306414011733" version="1.0"/>
+<refactoring comment="将资源“/Shop2/src/ProjectRescue1”重命名为“ProjectRescue”&#13;&#10;－ 原始元素：“ProjectRescue1”" description="重命名资源“ProjectRescue1”" flags="7" id="org.eclipse.jdt.ui.rename.resource" input="src/ProjectRescue1" name="ProjectRescue" stamp="1306414018532" version="1.0"/>
+</session>

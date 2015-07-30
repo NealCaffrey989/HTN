@@ -1,0 +1,85 @@
+(defdomain ProjectRescue
+ (
+ ;;-----------------------------operator----------------------------------------
+   (:- (same ?x ?x) nil)
+  (:- (different ?x ?y) ((not (same ?x ?y))))
+ 
+ ;;---------------------工程抢险----------------------------
+  (:operator (!DangerousDemand-1 ?loc)
+     ()
+     ()
+     ((ResourceDemand ?loc  stone 300)(ResourceDemand ?loc earthwork 1000))
+   )
+   
+   (:operator (!DangerousDemand-2 ?loc)
+     ()
+     ()
+     ((ResourceDemand ?loc stone 450)(ResourceDemand ?loc earthwork 3000))
+   )
+ 
+   (:operator (!!ResouceLackHandle ?re ?loc ?value ?com_value)
+     ((Resource ?re ?loc ?value ?f))
+     ((Resource ?re ?loc ?value ?f))
+     ((Resource ?re ?loc ?com_value (call - ?com_value ?value)))
+   )
+   
+   (:operator (!HandleResouceDemand ?re ?loc-from ?loc-to ?handle_value)
+     ((Resource ?re ?loc-from ?value ?f)(ResourceDemand ?loc-to ?re ?demand_value))
+     ((Resource ?re ?loc-from ?value ?f)(ResourceDemand ?loc-to ?re ?demand_value))
+     ((Resource ?re ?loc-from (call - ?value ?handle_value) ?f)
+      (ResourceDemand ?loc-to ?re (call - ?demand_value ?handle_value)))
+   )
+   
+   
+  ;;------通用操作------
+  (:operator(!!return-back)
+  ()
+  ()
+  ()
+  )
+ ;;-----------------------------method------------------------------------------
+ (:method(ProjectRescue ?loc ?dangerous)
+  ((call = ?dangerous 1))
+  ((!DangerousDemand-1 ?loc)(DemandHandle ?loc))
+  ((call = ?dangerous 2))
+  ((!DangerousDemand-2 ?loc)(DemandHandle ?loc))
+  ()
+  ((!!return-back))
+ )
+ 
+ (:method(DemandHandle ?loc)
+  ((Resource ?re ?loc-from ?value ?f)
+   (ResourceDemand ?loc ?re ?com_value)
+   (Resource ?re ?loc-from1 ?value1 ?f1)
+   (call > ?value 0)(call > ?com_value 0)(call > ?value1 0)
+   (not (same ?loc-from ?loc-from1))
+   (assign ?vx (call min ?com_value ?value))
+   )
+  ((!HandleResouceDemand ?re ?loc-from ?loc ?vx)
+   (DemandHandle ?loc))
+   
+  ((Resource ?re ?loc-from ?value ?f)
+   (ResourceDemand ?loc ?re ?com_value)
+   (call > ?com_value 0)(call > ?value 0))
+  ((ResouceLackJudge ?re ?loc-from ?com_value)
+   (!HandleResouceDemand ?re ?loc-from ?loc ?com_value)
+   (DemandHandle ?loc))
+   
+   ((Resource ?re ?loc-from ?value ?f)
+   (ResourceDemand ?loc ?re ?com_value)
+   (call > ?com_value 0))
+  ((ResouceLackJudge ?re ?loc-from ?com_value)
+   (!HandleResouceDemand ?re ?loc-from ?loc ?com_value)
+   (DemandHandle ?loc))
+  ()
+  ((!!return-back))
+ )
+ 
+ (:method(ResouceLackJudge ?re ?loc-from ?com_value)
+  ((Resource ?re ?loc-from ?value ?f)(call < ?value ?com_value))
+  ((!!ResouceLackHandle ?re ?loc-from ?value ?com_value))
+  ()
+  ((!!return-back))
+ )
+ )
+)

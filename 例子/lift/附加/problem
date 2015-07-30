@@ -1,0 +1,15 @@
+(defproblem problem Transport
+ ((Team-At team1 a1)
+  (Team-At team2 a2)
+  (TeamAbility team1 5 0)
+  (TeamAbility team2 7 0)
+  (Stone-At 5 a1)
+  (Stone-At 0 a2)
+  (Stone-At 8 b)
+ )
+
+ (:unordered
+  (Stone-At 0 a1)
+  (Stone-At 7 a2)
+  (Stone-At 6 b))
+)

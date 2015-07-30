@@ -1,0 +1,84 @@
+import java.awt.EventQueue;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JTextField;
+
+import java.awt.BorderLayout;
+
+
+public class TaskExce {
+
+	static JFrame frame;
+	JPanel panel;
+	JPanel panel_2;
+	JPanel panel_3;
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					TaskExce window = new TaskExce();
+					window.frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the application.
+	 */
+	public TaskExce() {
+		initialize();
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+		frame = new JFrame();
+		//frame.setBounds(100, 100, 461, 281);
+		frame.setLayout(new BorderLayout(5, 5));
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		panel = new myPanel_North();
+		frame.getContentPane().add(panel, BorderLayout.NORTH);
+		
+		panel_2 = new myPanel_South();
+		frame.getContentPane().add(panel_2, BorderLayout.SOUTH);
+		
+		
+		//myPanel(JProgressBar pb,JTextField field,JButton button_run,JButton button_stop,JPanel panel,JLabel label_1,JLabel label_2)
+		/*
+		 * 
+		 * 
+		 * 
+		 * 
+		 */
+/*		JProgressBar bp=new JProgressBar();
+		JTextField field=new JTextField("4");
+		JButton btnrun=new JButton("run");
+		JButton btnstop=new JButton("stop");
+		JLabel label1=new JLabel("task1");
+		JLabel label2=new JLabel("ÄÜÁ¦£º");
+		JPanel mypanel=new myPanel(bp,field,btnrun,btnstop,label1,label2);
+		panel_3=new JPanel();
+		panel_3.add(mypanel);
+		//panel_3=new myPanel(bp,field,btnrun,btnstop,label1,label2);
+		frame.getContentPane().add(panel_3, BorderLayout.CENTER);
+		*/
+		
+		//panel_3 = new myPanel_Center();
+		//frame.getContentPane().add(panel_3, BorderLayout.CENTER);
+		//myPanel_Center.BuildThread();
+		
+		frame.pack();
+	}
+}

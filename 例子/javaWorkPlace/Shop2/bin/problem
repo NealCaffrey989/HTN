@@ -1,0 +1,12 @@
+(defproblem problem ProjectRescue
+ (
+ (Resource stone B1 200 0)
+ (Resource stone B2 500 0)
+ (Resource earthwork B1 4000 0)
+ (Resource earthwork B2 2000 0)
+ )
+ (:unordered
+  (ProjectRescue A1 1)
+  (ProjectRescue A2 2)
+ )
+)

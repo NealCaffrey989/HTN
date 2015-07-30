@@ -1,0 +1,475 @@
+(defdomain Flood_Evacuate
+ (
+ ;;-----------------------------axiom----------------------------------------
+  (:- (same ?x ?x) nil)
+  (:- (different ?x ?y) ((not (same ?x ?y))))
+ ;;-----------------------------operator----------------------------------------
+ ;;---------------------------------转移人员----------------------------------------
+  (:operator (!bus-move ?t ?bus ?loc-from ?loc-to)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;模板前提-时间
+      (Cost-Resource Res-gas ?n)(Res-gas ?o ?n1);;模板前提-资源储量
+      ;;-----自定义前提------
+      (owner-at ?o ?loc-from)(bus-at-loc ?bus ?loc-from)(distance-between ?loc-from ?loc-to ?distance);;环境状态
+      (speed-of ?bus ?speed)(bus-mile-spend Res-gas ?bus ?n2);;行动能力与消耗能力
+      (assign ?tmv (call / ?distance ?speed))(assign ?sg (call * ?n2 ?distance)) ;;时间与资源计算
+      (call >= ?n1 ?sg);;资源储量要大于本次任务执行消耗
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;删除历史时间状态
+     (Cost-Resource Res-gas ?n)(Res-gas ?o ?n1);;删除历史资源状态
+     (bus-at-loc ?bus ?loc-from);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?bus (call + ?t ?tmv))(Duration ?tmv);;时间状态添加
+      (Cost-Resource Res-gas (call + ?n ?sg))(Res-gas ?o (call - ?n1 ?sg));;资源状态添加
+      (bus-at-loc ?bus ?loc-to);;环境状态改变
+     )
+    ;;消耗（忽略）
+   )
+   
+   (:operator (!bus-carry ?t ?bus ?loc)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;模板前提-时间
+      ;;模板前提-资源储量
+      ;;-----自定义前提------
+      (person-of ?loc ?amount);;环境状态
+      (carry-ability ?bus ?ability)(call > ?ability 0);;行动能力与消耗能力
+      (carryed-person ?bus ?number)
+      (assign ?tcr 0.1)(assign ?crd (call min ?amount ?ability)) ;;时间计算与装载货物数量
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;删除历史时间状态
+      ;;删除历史资源状态
+      (person-of ?loc ?amount)(carry-ability ?bus ?ability)(carryed-person ?bus ?number);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?bus (call + ?t ?tcr))(Duration ?tcr);;时间状态添加
+      ;;资源状态添加
+      (person-of ?loc (call - ?amount ?crd))(carry-ability ?bus (call - ?ability ?crd))
+      (carryed-person ?bus (call + ?number ?crd));;环境状态改变,装载能力改变
+     )
+    ;;消耗（忽略）
+   )
+   
+   (:operator (!bus-unload ?t ?bus ?loc)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;模板前提-时间
+      ;;模板前提-资源储量
+      ;;-----自定义前提------
+      (capacity-of ?loc ?capacity);;环境状态
+      (carry-ability ?bus ?ability)
+      (carryed-person ?bus ?number)(call > ?number 0);;行动能力与消耗能力
+      (assign ?tuld 0.1)(assign ?uld (call min ?number ?capacity)) ;;时间计算与装载货物数量
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;删除历史时间状态
+      ;;删除历史资源状态
+      (capacity-of ?loc ?capacity)(carryed-person ?bus ?number)
+      (carry-ability ?bus ?ability);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?bus (call + ?t ?tuld))(Duration ?tuld);;时间状态添加
+      ;;资源状态添加
+      (capacity-of ?loc (call - ?capacity ?uld))(carry-ability ?bus (call + ?ability ?uld))
+      (carryed-person ?bus (call - ?number ?uld));;环境状态改变,装载能力改变
+     )
+    ;;消耗（忽略）
+   )
+   
+   (:operator (!use-extend-area ?t ?bus)
+    ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;模板前提-时间
+      ;;模板前提-资源储量
+      ;;-----自定义前提------
+      (carry-ability ?bus ?ability)
+      (carryed-person ?bus ?number)(call > ?number 0);;行动能力与消耗能力
+      (assign ?tuld 0.1)(assign ?uld ?number) ;;时间计算与装载货物数量
+      (number-of C ?n1)
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?bus ?t2)(Duration ?t3);;删除历史时间状态
+      ;;删除历史资源状态
+      (carryed-person ?bus ?number)
+      (carry-ability ?bus ?ability);;删除环境状态
+      (number-of C ?n1)
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?bus (call + ?t ?tuld))(Duration ?tuld);;时间状态添加
+      ;;资源状态添加
+      (carry-ability ?bus (call + ?ability ?uld))
+      (carryed-person ?bus (call - ?number ?uld));;环境状态改变,装载能力改变
+       (number-of C (call + ?n1 ?uld))
+     )
+    ;;消耗（忽略）
+   )
+  ;;--------------------------------转移物资---------------------------------------
+  (:operator(!track-move ?t ?track ?loc-from ?loc-to)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;模板前提-时间
+      (Cost-Resource Res-gas ?n)(Res-gas ?o ?n1);;模板前提-资源储量
+      ;;-----自定义前提------
+      (owner-at ?o ?loc-from)(track-at-loc ?track ?loc-from)(distance-between ?loc-from ?loc-to ?distance);;环境状态
+      (speed-of ?track ?speed)(track-mile-spend Res-gas ?bus ?n2);;行动能力与消耗能力
+      (assign ?tmv (call / ?distance ?speed))(assign ?sg (call * ?n2 ?distance)) ;;时间与资源计算
+      (call >= ?n1 ?sg);;资源储量要大于本次任务执行消耗
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;删除历史时间状态
+     (Cost-Resource Res-gas ?n)(Res-gas ?o ?n1);;删除历史资源状态
+     (track-at-loc ?track ?loc-from);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?track (call + ?t ?tmv))(Duration ?tmv);;时间状态添加
+      (Cost-Resource Res-gas (call + ?n ?sg))(Res-gas ?o (call - ?n1 ?sg));;资源状态添加
+      (track-at-loc ?bus ?loc-to);;环境状态改变
+     )
+    ;;消耗（忽略）
+  )
+  
+  (:operator (!track-carry ?t ?track ?loc)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;模板前提-时间
+      ;;模板前提-资源储量
+      ;;-----自定义前提------
+      (goods-of ?loc ?amount);;环境状态
+      (carry-ability ?track ?ability)(call > ?ability 0);;行动能力与消耗能力
+      (carryed-goods ?track ?number)
+      (assign ?tcr 0.1)(assign ?crd (call min ?amount ?ability)) ;;时间计算与装载货物数量
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;删除历史时间状态
+      ;;删除历史资源状态
+      (goods-of ?loc ?amount)(carry-ability ?track ?ability)(carryed-goods ?track ?number);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?track (call + ?t ?tcr))(Duration ?tcr);;时间状态添加
+      ;;资源状态添加
+      (goods-of ?loc (call - ?amount ?crd))(carry-ability ?track (call - ?ability ?crd))
+      (carryed-goods ?track (call + ?number ?crd));;环境状态改变,装载能力改变
+     )
+    ;;消耗（忽略）
+   )
+   
+   (:operator (!track-unload ?t ?track ?loc)
+    ;;前提条件
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;模板前提-时间
+      ;;模板前提-资源储量
+      ;;-----自定义前提------
+      (capacity-of-goods ?loc ?capacity);;环境状态
+      (carry-ability ?track ?ability)
+      (carryed-goods ?track ?number)(call > ?number 0);;行动能力与消耗能力
+      (assign ?tuld 0.1)(assign ?uld (call min ?number ?capacity)) ;;时间计算与装载货物数量
+     )
+    ;;删除状态
+     ((StartTime ?t1)(End-Time ?track ?t2)(Duration ?t3);;删除历史时间状态
+      ;;删除历史资源状态
+      (capacity-of-goods ?loc ?capacity)(carryed-goods ?track ?number)
+      (carry-ability ?track ?ability);;删除环境状态
+     )
+    ;;添加状态
+     ((StartTime ?t)(End-Time ?track (call + ?t ?tuld))(Duration ?tuld);;时间状态添加
+      ;;资源状态添加
+      (capacity-of-goods ?loc (call - ?capacity ?uld))(carry-ability ?track (call + ?ability ?uld))
+      (carryed-goods ?track (call - ?number ?uld));;环境状态改变,装载能力改变
+     )
+    ;;消耗（忽略）
+   )
+   ;;--------------------------------------单位任务完成操作-------------------------------------------
+  (:operator(!!save-method ?o ?t)
+  ;;前提条件
+  ((End-Time ?o ?t1))
+  ;;删除状态
+  ((End-Time ?o ?t1))
+  ;;添加状态
+  ((End-Time ?o ?t))
+  ;;消耗（忽略）
+  )
+   
+  ;;------通用操作------
+  (:operator(!!return-back)
+  ;;前提条件
+  ()
+  ;;删除状态
+  ()
+  ;;添加状态
+  ()
+  ;;消耗（忽略）
+  )
+ ;;-----------------------------method------------------------------------------
+ ;;---------------------------------人员疏散方法------------------------------------------
+ ;;------从单一源到单一目的地------
+ (:method(evacuation-people ?o)
+  (:sort-by ?distance < ((person-of ?loc-from ?amount)(capacity-of ?loc-to ?capacity)(distance-between ?loc-from ?loc-to ?distance)
+  (call > ?amount 0)(call > ?capacity 0)
+  (bus-at-loc ?bus ?loc-from)
+  (End-Time ?bus ?tx)
+  ))
+  (
+   (evacuation-people ?tx ?bus ?loc-from ?loc-to)
+   (evacuation-people ?o)
+  )
+  
+  (:sort-by ?distance < ((person-of ?loc-from ?amount)(capacity-of ?loc-to ?capacity)(distance-between ?loc-to ?loc-from ?distance)
+  (call > ?amount 0)(call > ?capacity 0)(bus-at-loc ?bus ?loc-to)
+  (End-Time ?bus ?tx)
+  ))
+  (
+   (!bus-move ?tx ?bus ?loc-to ?loc-from)
+   (evacuation-people ?o)
+  )
+  
+  (:sort-by ?time (
+   (not((person-of ?loc-from ?amount)(call > ?amount 0)))
+   (End-Time ?bus ?time)(bus-mile-spend ?res ?bus ?rate)
+  ))
+  (
+   (!!save-method ?o ?time)
+   (!!return-back)
+  ) 
+ )
+ ;;-------主循环--------
+ (:method(evacuation-people ?o ?t)
+  (
+   (person-of ?loc-from ?amount)(call > ?amount 0)(bus-at-loc ?bus ?loc-from)
+   (capacity-of ?loc-to ?capacity)(call > ?capacity 0)
+  )
+  (
+   (leave-flood-area ?loc-from)
+   (evacuation-people ?o ?t)
+  )
+  (
+   (person-of ?loc-from ?amount)(call > ?amount 0)(capacity-of ?loc-to ?capacity)(bus-at-loc ?bus ?loc-to)
+   (capacity-of ?loc-to1 ?capacity1)(call > ?capacity1 0)(not(bus-at-loc ?bus ?loc-from))
+  )
+  (
+   ;;(to-flood-area ?loc-from);;未经过时间优化
+   (to-flood-area-1);;时间优化解
+   (evacuation-people ?o ?t)
+   )
+   
+  (:sort-by ?time > (
+    (not((person-of ?loc-from ?amount)(call > ?amount 0)))
+    (capacity-of ?loc-to ?capacity)(call >= ?capacity 0)
+    (End-Time ?bus ?time)(bus-mile-spend ?res ?bus ?rate)
+  ))
+  (
+   (!!save-method ?o ?time)
+  ) 
+  (
+   (person-of ?loc-from ?amount)(call > ?amount 0)
+   (not((capacity-of ?loc-to ?capacity)(call > ?capacity 0)))
+  )
+  (
+   (use-extent-area ?tx)
+  )   
+ )
+ 
+ ;;-------从一辆车与多个源--------
+ (:method(leave-flood-area ?loc-from)
+  (:sort-by ?distance < 
+  ((person-of ?loc-from ?amount)(capacity-of ?loc-to ?capacity)(distance-between ?loc-from ?loc-to ?distance)
+  (call > ?capacity 0)
+  (bus-at-loc ?bus ?loc-from)(carry-ability ?bus ?ability)
+  (call >= ?amount ?ability )
+  (End-Time ?bus ?tx)
+  ))
+  (
+   (evacuation-people ?tx ?bus ?loc-from ?loc-to)
+  )
+  
+  (:sort-by ?distance < 
+  ((person-of ?loc-from ?amount)(person-of ?loc-from1 ?amount1)(distance-between ?loc-from ?loc-from1 ?distance)
+  (call > ?amount1 0)
+  (bus-at-loc ?bus ?loc-from)(carry-ability ?bus ?ability)
+  (call < ?amount ?ability )
+  (End-Time ?bus ?tx)   
+  ))
+  (
+   (!bus-carry ?tx ?bus ?loc-from)
+   (move-people ?tx ?bus ?loc-from ?loc-from1)
+  )
+  (:sort-by ?distance < 
+   (
+   (not((person-of ?loc-from1 ?amount1)(not(same ?loc-from ?loc-from1))(call > ?amount1 0)))
+   (person-of ?loc-from ?amount)(capacity-of ?loc-to ?capacity)(distance-between ?loc-from ?loc-to ?distance)
+   (call > ?capacity 0)(bus-at-loc ?bus ?loc-from)
+   (End-Time ?bus ?tx)
+   )
+  )
+  ((evacuation-people ?tx ?bus ?loc-from ?loc-to))
+ )
+ 
+ ;;-------从一辆车到多个目的地--------
+ (:method(unload-people-mult ?t ?bus ?loc-to)
+  (
+   (carryed-person ?bus ?amount)(capacity-of ?loc-to ?capacity)(call >= ?capacity ?amount)
+   (End-Time ?bus ?tx)
+  )
+  (
+   (!bus-unload ?tx ?bus ?loc-to)  
+  )
+  
+  (:sort-by ?distance <
+   (
+   (carryed-person ?bus ?amount)(capacity-of ?loc-to ?capacity)(call < ?capacity ?amount)
+   (capacity-of ?loc-to1 ?capacity1)(not(same ?loc-to ?loc-to1))(call > ?capacity 0)
+   (distance-between ?loc-to ?loc-to1 ?distance)
+   (End-Time ?bus ?tx)
+   )
+  )
+  (
+   (!bus-unload ?tx ?bus ?loc-to)  
+   (move-people ?tx ?bus ?loc-to ?loc-to1)
+   (unload-people ?t ?bus ?loc-to1)
+  )
+  (
+   (not((capacity-of ?loc-to1 ?capacity1)(not(same ?loc-to ?loc-to1))(call > ?capacity 0)))
+   (End-Time ?bus ?tx)(call < ?capacity ?amount)
+  )
+  (
+   (!bus-unload ?tx ?bus ?loc-to)
+   (use-extent-area ?tx)  
+  )
+ )
+ 
+ 
+ ;;-------其他功能函数------- 
+ 
+ (:method(to-flood-area-1)
+  (
+    (End-Time ?busx ?tx)(bus-at-loc ?busx ?loc-tox)(capacity-of ?loc-tox ?capacityx)
+    (forall(?t)((End-Time ?bus ?t)(bus-at-loc ?bus ?loc-to)(capacity-of ?loc-to ?capacity))(call >= ?t ?tx))
+  )
+  (
+   (to-flood-area ?busx ?tx)
+  )
+ )
+ 
+ (:method(to-flood-area ?bus ?t)
+  (:sort-by ?distance < 
+  ((bus-at-loc ?bus ?loc-to)(person-of ?loc-from ?amount)
+   (distance-between ?loc-to ?loc-from ?distance)(call > ?amount 0)
+  ))
+  (
+   (!bus-move ?t ?bus ?loc-to ?loc-from)
+  )
+ )
+ 
+ (:method(to-flood-area ?loc-from)
+  (:sort-by ?distance < 
+  ((capacity-of ?loc-to ?capacity)(distance-between ?loc-to ?loc-from ?distance)
+  (call > ?amount 0)(call > ?capacity 0)(bus-at-loc ?bus ?loc-to)
+  (End-Time ?bus ?tx)
+  ))
+  (
+   (!bus-move ?tx ?bus ?loc-to ?loc-from1)
+  )
+ )
+ 
+ 
+ (:method(evacuation-people ?t ?bus ?loc-from ?loc-to)
+  (
+  )
+  (
+   (!bus-carry ?t ?bus ?loc-from)
+   (move-people ?t ?bus ?loc-from ?loc-to)
+   (unload-people-mult ?t ?bus ?loc-to)
+   ;;(unload-people ?t ?bus ?loc-to)
+  )
+ )
+ 
+
+ 
+ (:method(move-people ?t ?bus ?loc-from ?loc-to)
+  (
+   (End-Time ?bus ?tx)
+  )
+  (
+   (!bus-move ?tx ?bus ?loc-from ?loc-to)   
+  )
+ )
+ 
+ (:method(unload-people ?t ?bus ?loc-to)
+  (
+   (End-Time ?bus ?tx)
+  )
+  (
+   (!bus-unload ?tx ?bus ?loc-to)
+  )
+ )
+ 
+ (:method(use-extent-area ?tx)
+ (
+   (carryed-person ?bus ?number)(call > ?number 0)(End-Time ?bus ?tx)
+ )
+ (
+  (!use-extend-area ?tx ?bus)
+  (use-extent-area ?tx)
+ )
+ 
+ (
+  not((carryed-person ?bus ?number)(call > ?number 0))
+ )
+ (
+  (!!return-back)
+ )
+ )
+ ;;---------------------------------物资疏散方法-------------------------------------------
+ (:method(evacuation-goods ?o ?t)
+  (:sort-by ?distance < (
+   (goods-of ?loc-from ?amount)(call > ?amount 0)(track-at-loc ?track ?loc-from)
+   (capacity-of-goods ?loc-to ?capacity)(distance-between ?loc-from ?loc-to ?distance)
+   (End-Time ?track ?tx)
+  ))
+  (
+   (!track-carry ?tx ?track ?loc-from)
+   (move-goods ?tx ?track ?loc-from ?loc-to)
+   (unload-goods ?tx ?track ?loc-to)
+   (evacuation-goods ?o ?tx)
+  )
+  (:sort-by ?distance < (
+  (goods-of ?loc-from ?amount)(call > ?amount 0)(not(track-at-loc ?track ?loc-from))
+  (capacity-of-goods ?loc-to ?capacity)(track-at-loc ?track ?loc-to)
+  (distance-between ?loc-to ?loc-from ?distance)(End-Time ?track ?tx)
+  ))
+  (
+   (!track-move ?tx ?track ?loc-to ?loc-from) 
+   (evacuation-goods ?o ?tx)
+  )
+  ;;(not((goods-of ?loc ?amount)(call > ?amount 0)))
+  ;;(
+   ;;(!!return-back)
+ ;; )
+  
+  (:sort-by ?time > (
+    (not((goods-of ?loc-from ?amount)(call > ?amount 0)))
+    (capacity-of-goods ?loc-to ?capacity)(call >= ?capacity 0)
+    (End-Time ?track ?time)(track-mile-spend ?res ?track ?rate)
+  ))
+  (
+   (!!save-method ?o ?time)
+  ) 
+  
+ )
+ 
+  (:method(move-goods ?t ?track ?loc-from ?loc-to)
+  (
+   (End-Time ?track ?tx)
+  )
+  (
+   (!track-move ?tx ?track ?loc-from ?loc-to)   
+  )
+ )
+ 
+ (:method(unload-goods ?t ?track ?loc-to)
+  (
+   (End-Time ?track ?tx)
+  )
+  (
+   (!track-unload ?tx ?track ?loc-to)
+  )
+ )
+ 
+ ;;-------------------------------end-------------------------------------------
+ )
+)

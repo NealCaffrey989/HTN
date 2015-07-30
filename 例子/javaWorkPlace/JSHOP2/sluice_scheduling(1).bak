@@ -1,0 +1,184 @@
+(defdomain sluice_scheduling
+ (
+    ;;--axioms--
+    ;;本次开闸可否完成
+    (:-(open-can-finish ?fIn ?t ?fOut ?wl ?Max ?Min)
+        can
+        ;;((call < ?fIn ?fOut)(call <= (?fOut-?fIn)*?t (?Max-?Min)*1000)(call = ?wl ?Max))
+        ((call < ?fIn ?fOut)(call <= (call * (call - ?fOut ?fIn) ?t) (call * (call - ?Max ?Min) 1000))(call = ?wl ?Max))
+    )
+    ;;本次关闸可否完成
+    (:-(close-can-finish ?fIn ?t ?fOut ?wl ?Max)
+        can
+        ;;((call < ?fOut ?fIn)(call <= (?fIn-?fOut)*?t (?Max-?wl)*1000)(call < ?wl ?Max))
+        ((call < ?fOut ?fIn)(call <= (call * (call - ?fIn?fOut) ?t) (call * (call - ?Max ?wl) 1000))(call < ?wl ?Max))
+    )
+    ;;判定是否完成任务
+    (:-(task-finished ?wl ?Max)
+       finish
+       ((call <= ?wl ?Max))
+    )
+    (:-(same ?x ?x) nil)
+      
+    ;;--operator--
+    (:operator
+    ;;开完闸就完成了任务
+    (!open-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+     ((water-level ?wl)(remain-time ?t)) 
+       ;;((water-level (?Max-(?ofout-?fIn)*(?t)*/1000))(remain-time 0))
+       ((water-level (call - ?Max (call / (call * (call - ?ofout ?fIn) ?t) 1000)))(remain-time 0))
+   )
+   
+   (:operator (!open-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max ?Min)
+    ;;本次开闸,水位下降,不能完成任务
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+     ((water-level ?wl)(remain-time ?t))
+     ;;((water-level ?Min)(remain-time (?t-(?Max-?Min)*1000/(?ofout-?fIn)))
+     ((water-level ?Min)
+      (remain-time (call - ?t (call / (call * (call - ?Max ?Min) 1000) (call - ?ofout ?fIn)))))
+    )
+    (:operator
+    ;;持续所有闸门开启,水位上升,无法完成
+    (!open-sluice-3 ?sluice ?ofout ?fIn ?t ?wl)
+     ((call >= ?fIn ?ofout))
+     ((water-level ?wl)(remain-time ?t))
+     ;;((water-level (?fIn-?ofout)*?t/1000+wl)(remain-time 0))
+     ((water-level (call + (call / (call * (call - ?fIn ?ofout) ?t) 1000) wl))(remain-time 0))
+    )
+   
+   (:operator
+    ;;至少有一个闸门没开启，其他持续开启,水位上升,可以完成
+    (!open-sluice-4 ?sluice ?ofout ?fIn ?t ?wl)
+     ((call >= ?fIn ?ofout))
+     ()
+     ()
+   )
+   
+    (:operator
+    ;;本次关闸也能完成任务
+    (!close-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+     ()
+     ((water-level ?wl)(remain-time ?t))
+     ;;((water-level ((?fIn-?cfout)*?t/1000+?wl))(remain-time 0))
+     ((water-level (call + (call / (call * (call - ?fIn ?cfout) ?t) 1000) ?wl))(remain-time 0))
+   )
+    
+   (:operator
+    ;;本次关闸不能完成任务
+    (!close-sluice-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max)
+     ((call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+     ()
+     ((water-level ?wl)(remain-time ?t))
+       ;;((water-level ?Max)(remain-time ((?Max-?wl)/(?fIn-?cfout))))
+       ((water-level ?Max)(remain-time (call / (call - ?Max ?wl) (call - ?fIn ?cfout))))
+   )
+    
+    (:operator
+    ;;不用任何操作
+    (!do-nothing)
+     ;; instantaneous preconditions
+     (remain-time ?t)
+     ((remain-time ?t))
+     ((remain-time 0))
+   )
+    
+   ;;--method--
+   (:method
+     (remain-time ?t1)
+      
+      ;;--无需调度--
+      ;;Case1
+      ;;instantaneous preconditions-1
+       (
+        (remain-time ?t)(fIn ?fIn)
+        (forall(?f)(cfout ?f)(call < ?fIn ?f))
+        )
+      ;;subtasks-1
+      ((!do-nothing))
+
+      ;;--调度范围内--
+      ;;Case2
+      ;;instantaneous preconditions-2
+       ((fIn ?fIn)(water-level ?wl)(Max ?Max)(Min ?Min)(remain-time ?t)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout))
+
+      ;;subtasks-1
+      ((open-sub-sluice ?cfout ?fIn ?t ?wl) 
+         (open-sluice-done ?fIn ?t ?wl ?Max ?Min))
+
+      ;;--高于调度范围--
+      ;;Case3
+      ;;instantaneous preconditions-2
+       ((fIn ?fIn)(water-level ?wl)(Max ?Max)(Min ?Min)(remain-time ?t)
+        (open-max-ability ?sluice ?ofout)
+        (call >= ?fIn ?ofout)
+        (close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout))
+      ;;subtasks-1
+      (  (open-sub-sluice ?cfout ?fIn ?t ?wl) 
+         (!open-sluice-3 ?sluice ?ofout ?fIn ?t ?wl))
+   )
+   
+   
+   (:method
+     (open-sluice-done ?fIn ?t ?wl ?Max ?Min)
+    
+      ;;Case1 直接蓄水可以完成任务
+      ;;instantaneous preconditions-2
+       ((close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (close-can-finish ?fIn ?t ?cfout ?wl ?Max))
+      ;;subtasks-1
+       ((!close-sluice-1 ?sluice ?ofout ?cfout ?fIn ?t ?wl))
+      
+      ;;Case2 直接蓄水不可以完成任务
+      ;;instantaneous preconditions-2
+       ((close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout)
+        (not(close-can-finish ?fIn ?t ?cfout ?wl ?Max)))
+      ;;subtasks-2
+       ((!close-sluice-1-2 ?sluice ?ofout ?cfout ?fIn ?t ?wl) 
+       (issue-floor-schedule ?fIn ?t ?wl ?Max ?Min))
+      
+      ;;Case3 直接泄洪不可以完成任务
+      ;;instantaneous preconditions-2
+       ((close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ofout)
+        (not(open-can-finish ?fIn ?t ?ofout ?wl ?Max ?Min)))
+      ;;subtasks-3
+       (
+        (!open-sluice-2 ?fIn ?t ?wl) 
+        (issue-floor-schedule ?sluice ?ofout ?cfout ?fIn ?t ?wl ?Max ?Min))
+      
+      
+      ;;Case4 直接泄洪可以完成任务
+      ;;instantaneous preconditions-2
+       ((close-ability ?sluice ?cfout)
+        (open-ability ?sluice ?ofout)
+        (call >= ?fIn ?cfout)(call < ?fIn ?ofout) 
+        (open-can-finish ?fIn ?t ?ofout ?wl ?Max ?Min))
+      ;;subtasks-4
+       ((!open-sluice-1 ?fIn ?t ?wl) nil)     
+   )
+   
+   ;;--开启下级闸门--
+    (:method
+     (open-sub-sluice ?fout ?fIn ?t ?wl)
+      ;;instantaneous preconditions-1
+       ((ofout ?f)
+        ((call = ?f ?fout)
+        (open-ability ?sluice ?f)
+        (close-ability ?sluice ?cfout)))
+      ;;subtasks-1
+         ((!open-sluice-4 ?sluice ?fout ?fIn ?t ?wl)
+          (open-sub-sluice ?cfout ?fIn ?t ?wl))
+     )
+   )
+)

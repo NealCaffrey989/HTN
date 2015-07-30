@@ -1,0 +1,223 @@
+(defdomain Transport
+ (
+ ;;-----------------------------operator---------------------------------------- 
+(:operator (!carry ?car ?amount) 
+     (
+     	(Loc-At ?car ?loc-from) 
+      	(Loc-Stock ?loc-from ?stock)(car-Ability ?car ?carAbility ?carload)
+     );;前提条件
+     (
+     	(car-Ability ?car ?carAbility ?carload)(Loc-Stock ?loc-from ?stock)
+     );;要删除的状态
+     (
+     	(Loc-Stock ?loc-from (call - ?stock ?amount))
+     	(car-Ability ?car (call - ?carAbility ?amount) (call + ?carload ?amount))
+     );;要添加的状态
+)
+  
+(:operator (!move ?starttime ?endtime ?car ?loc-from ?loc-to)
+     (
+     	(TimeScope ?starttime1 ?endtime1)
+     	(Loc-At ?car ?loc-from)
+     	(Loc-from ?car ?car-from)
+     	(EndTime ?car ?time1)
+     ) ;;前提条件
+     (
+     	(TimeScope ?starttime1 ?endtime1)(Loc-At ?car ?loc-from)
+      	(Loc-from ?car ?car-from)
+      	(EndTime ?car ?time1)
+     ) ;;要删除的状态
+     (
+     	(TimeScope ?starttime ?endtime)(Loc-At ?car ?loc-to)
+      	(Loc-from ?car ?loc-from)
+      	(EndTime ?car ?endtime)
+     );;要添加的状态
+)    
+(:operator (!unload ?car ?amount)
+     (
+     	(sum-stock ?sum)
+     	(Loc-At ?car ?loc-to)
+      	(Loc-Have ?loc-to ?have)(car-Ability ?car ?carAbility ?carload)
+     );;前提条件
+     (
+     	(sum-stock ?sum)
+     	(car-Ability ?car ?carAbility ?carload)(Loc-Have ?loc-to ?have)
+     );;要删除的状态
+     (
+     	(Loc-Have ?loc-to (call + ?have ?amount))
+    	(car-Ability ?car (call + ?carAbility ?amount) (call - ?carload ?amount))
+    	(sum-stock (call - ?sum ?amount))
+     );;要添加的状态
+ )
+  ;;------通用操作------
+(:operator(!!Transport-over)
+     ()
+     ()
+     ()
+)
+ ;;-----------------------------method------------------------------------------
+(:method(a-move ?car ?loc-from)
+	(
+  		(in-loc ?loc-from ?loc ?num1)
+   		(loc-in ?loc ?loc-to)
+   		(in-loc ?loc-to ?loc ?num2)
+   		(not (call = ?num1 ?num2))
+   		(EndTime ?car ?starttime)
+  		(Speed ?car ?speed)
+   		(Distance ?loc-from ?loc-to ?distance)   
+   		(assign ?movetime (call / ?distance ?speed))
+	)
+	(
+		(!move ?starttime (call + ?starttime ?movetime) ?car ?loc-from ?loc-to)
+	)
+ )
+ 
+(:method(b-moveunload ?car ?loc-from ?loc-to)                           
+	(
+		(car-Ability ?car ?carAbility ?carload)
+  		(EndTime ?car ?starttime)
+ 		(Speed ?car ?speed)
+   		(Distance ?loc-from ?loc-to ?distance)   
+   		(assign ?movetime (call / ?distance ?speed))
+	)
+	(
+		(!move ?starttime (call + ?starttime ?movetime) ?car ?loc-from ?loc-to)
+   		(!unload ?car ?carload)
+	)
+)	
+				                        
+(:method(carry ?car)
+	(
+		(Loc-At ?car ?loc-from)
+   		(car-Ability ?car ?carAbility ?carload)
+   		(Loc-Stock ?loc-from ?stock)(call >= (call - ?stock ?carAbility) 0)
+	)
+	(
+		(!carry ?car ?carAbility)
+	)
+	(
+		(Loc-At ?car ?loc-from)
+   		(car-Ability ?car ?carAbility ?carload)
+   		(Loc-Stock ?loc-from ?stock)(not (call >= (call - ?stock ?carAbility) 0))
+	)
+	(
+		(!carry ?car ?stock)
+    	(a-move ?car ?loc-from)
+	)
+)                                                       
+(:method (moveunload ?starttime ?car ?loc-from)
+ 	(:sort-by ?distance < (
+  		(Loc-Ability ?loc-to ?maxstock) 
+  		(car-Ability ?car ?carAbility ?carload) 	
+  		(Loc-Have ?loc-to ?have)(call >= ?maxstock (call + ?have ?carload))
+  		(Distance ?loc-from ?loc-to ?distance) 	
+  		(car-Ability ?car ?carAbility ?carload)
+  		(Speed ?car ?speed)
+  		(Distance ?loc-from ?loc-to ?distance)
+  	 	(assign ?movetime (call / ?distance ?speed))
+  	 	(assign ?endtime (call + ?starttime ?movetime)))
+ 	)
+	(
+		(!move ?starttime ?endtime ?car ?loc-from ?loc-to)
+   		(!unload ?car ?carload)
+	)
+	(:sort-by ?distance < (
+  		(Loc-Ability ?loc-to ?maxstock) 
+  		(car-Ability ?car ?carAbility ?carload) 	
+  		(Loc-Have ?loc-to ?have)(not(call >= ?maxstock (call + ?have ?carload)))
+  		(on-Loc ?loc ?loc-to1)
+    	(Loc-Have ?loc-to1 ?have1)(call = ?have1 0)
+  		(Distance ?loc-from ?loc-to ?distance) 	
+  		(car-Ability ?car ?carAbility ?carload)
+  		(Speed ?car ?speed)
+  		(Distance ?loc-from ?loc-to ?distance)
+  	 	(assign ?movetime (call / ?distance ?speed))
+  	 	(assign ?endtime (call + ?starttime ?movetime)))
+ 	)
+	(
+		(!move ?starttime ?endtime ?car ?loc-from ?loc-to)
+   		(!unload ?car ?carload)
+	)
+	(:sort-by ?distance < (
+  		(Loc-Ability ?loc-to ?maxstock) 
+  		(car-Ability ?car ?carAbility ?carload) 	
+  		(Loc-Have ?loc-to ?have)(not(call >= ?maxstock (call + ?have ?carload)))
+  		(Loc-Have ?loc-to1 ?have1)(call > ?have1 0)
+    	(Loc-Ability ?loc-to1 ?maxstock1)(call > (call - ?maxstock1 ?have1) 0)
+  		(Distance ?loc-from ?loc-to ?distance) 	
+  		(car-Ability ?car ?carAbility ?carload)
+  		(Speed ?car ?speed)
+  		(Distance ?loc-from ?loc-to ?distance)
+  	 	(assign ?movetime (call / ?distance ?speed))
+  	 	(assign ?endtime (call + ?starttime ?movetime)))
+ 	)
+	(
+		(!move ?starttime ?endtime ?car ?loc-from ?loc-to)
+		(!unload ?car (call - ?maxstock ?have))
+		(b-moveunload ?car ?loc-to ?loc-to1)
+	)
+)
+
+(:method (backmove ?starttime ?car ?loc-from ?loc-to)
+	(
+		(Loc-Stock ?loc-to ?stock)(call > ?stock 0)
+  		(Speed ?car ?speed)
+   		(Distance ?loc-from ?loc-to ?distance)   
+   		(assign ?time (call / ?distance ?speed))
+  	)
+  	(	
+  		(!move ?st (call + ?starttime ?time) ?car ?loc-from ?loc-to)
+  	)
+  	(
+		(Loc-Stock ?loc-to ?stock)(call = ?stock 0)
+		(in-loc ?loc-to ?loc ?num1)
+   		(loc-in ?loc ?loc-to1)
+   		(in-loc ?loc-to1 ?loc ?num2)
+   		(not (call = ?num1 ?num2)) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  		(Speed ?car ?speed)
+   		(Distance ?loc-from ?loc-to1 ?distance)   
+   		(assign ?time (call / ?distance ?speed))
+  	)
+  	(	
+  		(!move ?starttime (call + ?starttime ?time) ?car ?loc-from ?loc-to1)
+  	)
+)
+
+(:method(Transport ?loc ?starttime)
+	(:sort-by ?starttime <(
+		(Loc-in ?loc ?loc-from)
+   		(Loc-Stock ?loc-from ?stock)(call > ?stock 0)
+   		(Loc-At ?car ?loc-from)
+   		(car-Ability ?car ?carAbility ?carload)(call > ?carAbility 0)
+   		(EndTime ?car ?starttime))
+	)
+ 	(
+ 		(carry ?car)
+  		(Transport ?loc ?endtime)
+	)
+	(:sort-by ?starttime <(
+		(Loc-in ?loc ?loc-from)
+ 		(car-Ability ?car ?carAbility ?carload)(call > ?carload 0)
+   		(EndTime ?car ?starttime))
+	)
+	(
+		(moveunload ?starttime ?car ?loc-from) 
+   		(Transport ?loc ?endtime)
+	)
+	(:sort-by ?starttime <(
+		(Loc-from ?car ?loc-from)
+   		(Loc-At ?car ?loc-to)(not(Loc-in ?loc ?loc-to))
+   		(sum-stock ?sum)(not (call = ?sum 0))
+   		(EndTime ?car ?starttime))
+	)
+	(
+		(backmove ?starttime ?car ?loc-to ?loc-from)
+   		(Transport ?loc ?endtime)
+	)
+  	()
+	(
+		(!!Transport-over)
+	)
+)
+)
+)

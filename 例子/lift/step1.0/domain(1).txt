@@ -1,0 +1,81 @@
+(defdomain SmartLift
+ (
+  ;;--------------Operators------------------
+
+  (:operator(!carry ?lift ?loc ?person)
+   ((Lift-At ?lift ?loc)
+    (Floor-Current ?loc ?person ?n)(call > ?n 1)
+    (LiftAbility ?lift ?person ?capacity ?inside)(call < ?inside 1))
+
+   ((LiftAbility ?lift ?person ?capacity ?inside)
+    (Floor-Current ?loc ?person ?n))
+
+   ((Floor-Current ?loc ?person (call - ?n 1))
+    (LiftAbility ?lift ?person ?capacity (call + ?inside 1)))
+  )
+
+  (:operator (!move ?sd ?ed ?lift ?loc-from ?loc-to)
+   ((Lift-At ?lift ?loc-from)
+   (EndDistance ?lift ?ed1))
+
+   ((Lift-At ?lift ?loc-from)
+    (EndDistance ?lift ?ed1))
+
+   ((Lift-At ?lift ?loc-to)
+    (EndDistance ?lift ?ed))
+  )
+
+  (:operator (!unload ?lift ?loc ?person)
+   ((Lift-At ?lift ?loc)
+    (Floor-Goal ?loc ?person ?n)
+    (Lift-Ability ?lift ?person ?capacity ?inside)(call > ?inside 0))
+
+   ((Lift-Ability ?lift ?person ?capacity ?inside)
+    (Floor-Goal ?loc ?person ?n))
+
+   ((Floor-Goal ?loc ?person (call + ?n 1))
+    (Lift-Ability ?lift ?person ?capacity (call - ?inside 1)))
+  )
+
+;;-----------General Operator----------   
+ (:operator(!!return-back)
+  ()
+  ()
+  ()
+ )
+
+;;----------------Methods-----------------
+
+(:method(SmartLift ?loc-to ?person ?n )
+ (:sort-by ?ed <(
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  (Lift-At ?lift ?loc-from)
+  (Lift-Ability ?lift ?person ?capacity ?inside)(call < ?inside 1)
+  (EndDistance ?lift ?ed )
+  (DistanceBetween ?lift ?loc-from ?loc-to ?x )))
+
+  (
+   (!carry ?lift ?loc-from ?person)
+   (!move ?ed (call + ?ed ?x) ?lift ?loc-from ?loc-to)
+   (!unload ?lift ?loc-to ?person)
+   (SmartLift ?loc-to (call + ?ed ?x) ?person)
+  )
+ (:sort-by ?ed < (
+  (Floor-Current ?loc-from ?person ?n1)(call > ?n1 0)
+  (Lift-At ?lift ?loc-to1)(not(Floor-Current ?loc-to1 ?person ?n))
+  (DistanceBetween ?lift ?loc-from ?loc-to ?x)
+  (DistanceBetween ?lift ?loc-to1 ?loc-from ?x1)
+  (EndDistance ?lift ?ed))
+ )
+ 
+ (
+  (!move ?ed (call + ?ed ?x1) ?lift ?loc-to1 ?loc-from)
+  (SmartLift ?loc-to ?person ?n)
+ )
+
+ ()
+
+ ((!!return-back))
+)  
+)
+) 

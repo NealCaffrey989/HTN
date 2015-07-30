@@ -1,0 +1,63 @@
+ ;;**********************************回收站******************************************
+  (:operator(!!save-method ?o ?t)
+  ;;前提条件
+  ((End-Time ?o ?t1))
+  ;;删除状态
+  ((End-Time ?o ?t1))
+  ;;添加状态
+  ((End-Time ?o ?t))
+  ;;消耗（忽略）
+  )
+  
+  (:operator(!!is-nottrack)
+  ;;前提条件
+  ((istrack true))
+  ;;删除状态
+  ((istrack true))
+  ;;添加状态
+  ((istrack false))
+  ;;消耗（忽略）
+  )
+  
+    ;;
+  (:operator(!!DealResourceLastOrder ?loc-from ?team ?time ?res ?amount)
+  ;;前提条件
+  ((LastOrder ?team ?time ?res ?amount)
+   (loc-at ?team ?loc)
+   (TotalOrder ?team ?res ?n)
+  )
+  ;;删除状态
+  ((LastOrder ?team ?time ?res ?amount)
+   (TotalOrder ?team ?res ?n)
+  )
+  ;;添加状态
+  (
+   (TransportDemand ?time ?res ?amount ?loc-from ?loc)
+   (TotalOrder ?team ?res (call - ?n ?amount))
+  )
+  ;;消耗（忽略）
+  )
+  
+   
+ (:method (DealOrders ?loc-to ?te ?t ?r ?a)
+  (:sort-by ?time <(
+   (LastOrder ?team ?time ?res ?amount)(call > ?t ?time)
+  ))
+  (
+   (DealLastOrder ?loc-to ?team ?time ?res ?amount)
+  )
+  ()
+  ((DealFirstOrder ?loc-to ?te ?t ?r ?a))
+ )
+ 
+ (:method (DealLastOrder ?loc-to ?team ?time ?res ?amount)
+  (:sort-by ?distince <(
+   (DistinceBetween ?loc-from ?loc-to ?distince)
+   (RemainRes ?loc-from ?tx ?res ?nx)
+  ))
+  ((!!DealResourceLastOrder ?loc-from ?team ?time ?res ?amount)
+   (RaiseResource ?loc-from ?res ?team ?time ?amount)
+   (TransportResource)
+  )
+ )
+  ;;******************************************回收站*****************************************************

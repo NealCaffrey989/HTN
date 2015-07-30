@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<session version="1.0">
+<refactoring comment="将资源“/Shop2/src/Raise_Resource”重命名为“ProjectRescue”&#13;&#10;－ 原始元素：“Raise_Resource”" description="重命名资源“Raise_Resource”" flags="7" id="org.eclipse.jdt.ui.rename.resource" input="src/Raise_Resource" name="ProjectRescue" stamp="1303803452651" version="1.0"/>
+</session>

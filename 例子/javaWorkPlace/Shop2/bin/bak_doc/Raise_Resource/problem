@@ -1,0 +1,133 @@
+(defproblem problem Raise_Resource
+ (
+  ;;------时间状态-------
+  (StartTime 0)(Duration 0)
+  ;;----------------------------------人员疏散----------------------------------------------
+  (End-Time track-1 0)
+  (End-Time track-2 0)
+  (End-Time track-3 0)
+  (End-Time track-4 0)
+  
+  (End-Time team-1 0)
+  (End-Time team-2 0)
+  (End-Time team-3 0)
+  (End-Time team-4 0)
+  (End-Time team-5 0)
+  ;;------资源状态--------
+  (Cost-Resource Res-money 0)
+  (istrack true)
+  ;;---A1地点的状态---
+  (distance-between A1 B1 50)
+  (distance-between A1 B2 45)
+  (distance-between A1 B3 60)
+  (distance-between A1 A2 40)
+  ;;---A2地点的状态---
+
+  (distance-between A2 B1 60)
+  (distance-between A2 B2 45)
+  (distance-between A2 B3 50)
+  (distance-between A2 A1 40)
+  ;;---B1地点的状态---
+  (distance-between B1 A1 50)
+  (distance-between B1 A2 60)
+  (distance-between B1 B2 20)
+  (distance-between B1 B3 30)
+
+  ;;---B2地点的状态---
+  (distance-between B2 A1 45)
+  (distance-between B2 A2 45)
+  (distance-between B2 B1 20)
+  (distance-between B2 B3 15)
+  ;;---B3地点的状态---
+  (distance-between B3 A1 60)
+  (distance-between B3 A2 50)
+  (distance-between B3 B1 30)
+  (distance-between B3 B2 15)
+  ;;--C点为扩展收容区--
+  (number-of C 0)
+  ;;---------------------------------track-------------------------------
+  ;;---track-1---
+  (loc-at track-1 A1) 
+  (carry-ability track-1 25)
+  (carry-of track-1 0)
+  (speed-of track-1 45)
+  (track-mile-spend Res-money track-1 20)
+  ;;---track-2---
+  (loc-at track-2 A2) 
+  (carry-ability track-2 25)
+  (carry-of track-2 0)
+  (speed-of track-2 45)
+  (track-mile-spend Res-money track-2 20)
+  ;;---track-3---
+  (loc-at track-3 A1) 
+  (carry-ability track-3 25)
+  (carry-of track-3 0)
+  (speed-of track-3 45)
+  (track-mile-spend Res-money track-3 20)
+  ;;---track-4---
+  (loc-at track-4 A2) 
+  (carry-ability track-4 25)
+  (carry-of track-4 0)
+  (speed-of track-4 45)
+  (track-mile-spend Res-money track-4 20)
+  ;;---------------------------------team------------------------------
+   ;;---team-1---
+  (loc-at team-1 A1) 
+  (carry-ability team-1 80)
+  (carry-of team-1 0)
+  (speed-of team-1 50)
+  (team-mile-spend Res-money team-1 40)
+   ;;---team-2---
+  (loc-at team-2 A2) 
+  (carry-ability team-2 80)
+  (carry-of team-2 0)
+  (speed-of team-2 60)
+  (team-mile-spend Res-money team-2 60)
+   ;;---team-3---
+  (loc-at team-3 A1) 
+  (carry-ability team-3 60)
+  (carry-of team-3 0)
+  (speed-of team-3 50)
+  (team-mile-spend Res-money team-3 40)
+   ;;---team-4---
+  (loc-at team-4 A2) 
+  (carry-ability team-4 80)
+  (carry-of team-4 0)
+  (speed-of team-4 60)
+  (team-mile-spend Res-money team-4 60)
+   ;;---team-5---
+  (loc-at team-5 A1) 
+  (carry-ability team-5 60)
+  (carry-of team-5 0)
+  (speed-of team-5 50)
+  (team-mile-spend Res-money team-5 40)
+  ;;--------------------------------driver状态---------------------------------
+  (loc-at-driver A1 5)
+  (loc-at-driver A2 5)
+  (loc-at-driver B1 0)
+  (loc-at-driver B2 0)
+  (loc-at-driver B3 0)
+  
+  ;;------------------------------石头储量----------------------------------
+    (stone-at-of A1 400)
+    (stone-at-of A2 700)
+  ;;------------------------------石头需求-----------------------------------
+    (stone-need-of B1 500)
+    (stone-need-of B2 600)
+    (stone-need-of B3 400)
+  )
+  
+  
+
+ (:unordered
+  ;;(!track-move 0 track-1 A1 B1)
+  ;;(!track-load-stone 1 track-1 A1)
+  ;;(!!return-back)
+  ;;(!Driver-move 2 3 A1 B1)
+  ;;(!track-unload-stone 1 track-2 B1)
+  ;;(!team-load-stone 2 team-1 A1)
+  ;;(!team-move 2 team-1 A1 B1)
+  ;;(!team-unload-stone 3 team-2 B1)
+  (raise-stone 20 3)
+ )
+)

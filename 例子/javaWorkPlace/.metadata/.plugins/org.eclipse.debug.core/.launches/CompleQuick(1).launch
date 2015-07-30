@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/MyJSHOP2/src/CompleQuick.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="CompleQuick"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="s"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="MyJSHOP2"/>
+<stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="E:\程序\Java\jshop2\src\JSHOP2\src"/>
+</launchConfiguration>

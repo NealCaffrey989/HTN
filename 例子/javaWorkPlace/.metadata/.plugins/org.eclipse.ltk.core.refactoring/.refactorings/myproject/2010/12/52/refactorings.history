@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 1 elements(s) to &apos;MyJSHOP2/src/(default package)&apos;&#x0D;&#x0A;- Original project: &apos;myproject&apos;&#x0D;&#x0A;- Destination element: &apos;MyJSHOP2/src/(default package)&apos;&#x0D;&#x0A;- Original element: &apos;math.StringObject.java&apos;" description="Copy compilation unit" destination="=MyJSHOP2/src&lt;" element1="/src&lt;math{StringObject.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1293181016214" units="1" version="1.0"/>
+</session>

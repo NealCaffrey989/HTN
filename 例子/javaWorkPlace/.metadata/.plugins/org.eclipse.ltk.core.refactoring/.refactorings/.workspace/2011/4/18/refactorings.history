@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<session version="1.0">
+<refactoring comment="将Java 项目“gsfdg”重命名为“Shop2”&#13;&#10;－ 原始元素：“gsfdg”&#13;&#10;－ 更新对已重构元素的引用" description="重命名 Java 项目“gsfdg”" flags="7" id="org.eclipse.jdt.ui.rename.java.project" input="=gsfdg" name="Shop2" references="true" stamp="1303801797916" version="1.0"/>
+</session>
